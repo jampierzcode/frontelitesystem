@@ -1,0 +1,301 @@
+.root-aplication {
+  display: flex;
+  height: 100%;
+  overflow: hidden;
+  position: absolute;
+  width: 100%;
+}
+.app-main {
+  display: flex;
+  flex-grow: 1;
+  flex-shrink: 1;
+  min-width: 0;
+  flex-direction: column;
+}
+.app-container {
+  display: flex;
+  flex-grow: 1;
+  flex-shrink: 1;
+  min-width: 0;
+  flex-direction: column;
+  overflow-y: hidden;
+}
+.app-container-sections {
+  flex-grow: 1;
+  overflow: auto;
+  padding: 32px 25px;
+  position: relative;
+}
+/* dise;o de tablas general */
+.box-table {
+  background: #fff;
+  border-radius: 6px;
+  box-shadow: 0 4px 6px #3e49540d;
+  margin-bottom: 14px;
+  overflow: hidden;
+  overflow-x: scroll;
+}
+.inmocms-table {
+  width: 100%;
+}
+.inmocms-table thead tr {
+  height: 72px;
+}
+.inmocms-table tr td.check-field {
+  min-width: 54px;
+  text-align: right;
+  width: 54px;
+}
+.inmocms-table thead tr td {
+  color: #171b1e;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 0 10px;
+}
+.inmocms-table tbody tr {
+  background: #fff;
+  height: 60px;
+  height: 75px;
+  height: 85px;
+  position: relative;
+}
+.inmocms-table tr td.check-field {
+  min-width: 54px;
+  text-align: right;
+  width: 54px;
+}
+.inmocms-table tbody tr td {
+  border-top: 1px solid #eee;
+  color: #171b1e;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 400;
+  padding: 0 10px;
+}
+.inmocms-table tbody tr:hover {
+  background: #f3f4f6;
+}
+.inmocms-table tbody tr td .foto {
+  align-items: center;
+  background-color: #eee;
+  background-position: 50%;
+  background-repeat: no-repeat;
+  background-size: cover;
+  border-radius: 6px;
+  display: flex;
+  font-size: 20px;
+  height: 54px;
+  height: 70px;
+  justify-content: center;
+  width: 54px;
+  width: 70px;
+}
+.table-controls {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  height: 50px;
+  height: auto;
+  padding: 0 12px;
+}
+.table-controls .page {
+  align-items: center;
+  display: flex;
+  flex-grow: 1;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+.table-controls .page .txt {
+  margin-bottom: 12px;
+  margin-right: 24px;
+  white-space: nowrap;
+}
+:where(.css-7voisk).ant-select-single {
+  font-size: 14px;
+  height: 32px;
+}
+:where(.css-7voisk).ant-select {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  color: rgba(0, 0, 0, 0.88);
+  font-size: 14px;
+  line-height: 1.5714285714285714;
+  list-style: none;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji",
+    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+:where(.css-7voisk)[class^="ant-select"],
+:where(.css-7voisk)[class*=" ant-select"] {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji",
+    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  font-size: 14px;
+  box-sizing: border-box;
+}
+input:focus {
+  outline: none !important;
+  border: none !important;
+}
+/* input {
+  outline: none !important;
+  border: none !important;
+  border: 0 !important;
+} */
+/* :where(.css-dev-only-do-not-override-m4timi).ant-select-outlined:not(
+    .ant-select-customize-input
+  )
+  .ant-select-selector {
+  border: 0 !important;
+  background: #f8f8f8 !important;
+  box-shadow: none !important;
+}
+:where(.css-dev-only-do-not-override-m4timi).ant-select-single
+  .ant-select-selector {
+  font-size: 0.875rem !important;
+  line-height: 1.25rem !important;
+} */
+.pagination {
+  margin-bottom: 12px;
+  margin-left: auto;
+}
+.pagination .options {
+  align-items: center;
+  display: flex;
+  margin: 0 -3px;
+}
+.pagination .options > .disabled {
+  opacity: 0.25;
+}
+.pagination .options > * {
+  align-items: center;
+  background: #c6d4f7;
+  border-radius: 6px;
+  color: #330aee;
+  cursor: pointer;
+  display: flex;
+  font-size: 14px;
+  font-weight: 500;
+  height: 34px;
+  margin: 0 3px;
+  padding: 0 20px;
+}
+.pagination .options > .mobile {
+  display: none;
+  padding: 0 12px;
+}
+.pagination .options .single-page.active {
+  background: #4b25f9;
+  color: #fff;
+}
+.pagination .options .single-page {
+  background: #fff;
+  font-size: 13px;
+  justify-content: center;
+  padding: 0;
+  width: 34px;
+}
+/* IMAGENES GALLERY */
+.propie-upload-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0 -6px 6px;
+}
+.propie-upload-thumbnail {
+  align-items: center;
+  aspect-ratio: 4 / 3;
+  background-color: #eee;
+  background-position: 50%;
+  background-repeat: no-repeat;
+  background-size: cover;
+  color: #464255;
+  display: flex;
+  flex-direction: column;
+  font-size: 24px;
+  justify-content: center;
+  margin: 6px;
+  position: relative;
+  width: 120px;
+}
+.propie-upload-thumbnail.draggable {
+  cursor: move;
+}
+.propie-upload-thumbnail.dropArea:before {
+  align-items: center;
+  background: #fff;
+  border: 2px dashed #a3a3a3;
+  bottom: 0;
+  color: #a3a3a3;
+  content: "Mover aquí­";
+  display: flex;
+  font-size: 12px;
+  font-weight: 500;
+  justify-content: center;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+.propie-upload-thumbnail .remove {
+  align-items: center;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 10px 20px #0000001a, 0 6px 6px #00000024;
+  color: #000;
+  cursor: pointer;
+  display: none;
+  font-size: 16px;
+  height: 24px;
+  justify-content: center;
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  width: 24px;
+}
+.propie-upload-thumbnail:hover .remove {
+  display: flex;
+}
+/* swiper css */
+.swiper {
+  width: 100%;
+  height: 300px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.swiper-slide {
+  background-size: cover;
+  background-position: center;
+}
+
+.mySwiper2 {
+  height: 80%;
+  width: 100%;
+}
+
+.mySwiper {
+  height: 20%;
+  box-sizing: border-box;
+  padding: 10px 0;
+}
+
+.mySwiper .swiper-slide {
+  width: 25%;
+  height: 100%;
+  opacity: 0.4;
+}
+
+.mySwiper .swiper-slide-thumb-active {
+  opacity: 1;
+}
+
+.swiper-slide img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}

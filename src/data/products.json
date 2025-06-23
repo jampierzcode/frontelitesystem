@@ -1,0 +1,362 @@
+[
+  {
+    "id": 1,
+    "name": "Producto 1",
+    "description": "Descripción del producto 1",
+    "category": "cumpleaños",
+    "price": 10,
+    "orders": 50,
+    "image": "https://via.placeholder.com/150?text=Producto+1"
+  },
+  {
+    "id": 2,
+    "name": "Producto 2",
+    "description": "Descripción del producto 2",
+    "category": "boda 2",
+    "price": 20,
+    "orders": 30,
+    "image": "https://via.placeholder.com/150?text=Producto+2"
+  },
+  {
+    "id": 3,
+    "name": "Producto 3",
+    "description": "Descripción del producto 3",
+    "category": "cumpleaños",
+    "price": 15,
+    "orders": 60,
+    "image": "https://via.placeholder.com/150?text=Producto+3"
+  },
+  {
+    "id": 4,
+    "name": "Producto 4",
+    "description": "Descripción del producto 4",
+    "category": "navidad",
+    "price": 25,
+    "orders": 20,
+    "image": "https://via.placeholder.com/150?text=Producto+4"
+  },
+  {
+    "id": 5,
+    "name": "Producto 5",
+    "description": "Descripción del producto 5",
+    "category": "boda 2",
+    "price": 50,
+    "orders": 45,
+    "image": "https://via.placeholder.com/150?text=Producto+5"
+  },
+  {
+    "id": 6,
+    "name": "Producto 6",
+    "description": "Descripción del producto 6",
+    "category": "cumpleaños",
+    "price": 12,
+    "orders": 35,
+    "image": "https://via.placeholder.com/150?text=Producto+6"
+  },
+  {
+    "id": 7,
+    "name": "Producto 7",
+    "description": "Descripción del producto 7",
+    "category": "navidad",
+    "price": 18,
+    "orders": 28,
+    "image": "https://via.placeholder.com/150?text=Producto+7"
+  },
+  {
+    "id": 8,
+    "name": "Producto 8",
+    "description": "Descripción del producto 8",
+    "category": "boda 2",
+    "price": 22,
+    "orders": 70,
+    "image": "https://via.placeholder.com/150?text=Producto+8"
+  },
+  {
+    "id": 9,
+    "name": "Producto 9",
+    "description": "Descripción del producto 9",
+    "category": "cumpleaños",
+    "price": 8,
+    "orders": 50,
+    "image": "https://via.placeholder.com/150?text=Producto+9"
+  },
+  {
+    "id": 10,
+    "name": "Producto 10",
+    "description": "Descripción del producto 10",
+    "category": "navidad",
+    "price": 30,
+    "orders": 15,
+    "image": "https://via.placeholder.com/150?text=Producto+10"
+  },
+  {
+    "id": 11,
+    "name": "Producto 11",
+    "description": "Descripción del producto 11",
+    "category": "boda 2",
+    "price": 35,
+    "orders": 25,
+    "image": "https://via.placeholder.com/150?text=Producto+11"
+  },
+  {
+    "id": 12,
+    "name": "Producto 12",
+    "description": "Descripción del producto 12",
+    "category": "cumpleaños",
+    "price": 17,
+    "orders": 40,
+    "image": "https://via.placeholder.com/150?text=Producto+12"
+  },
+  {
+    "id": 13,
+    "name": "Producto 13",
+    "description": "Descripción del producto 13",
+    "category": "boda 2",
+    "price": 45,
+    "orders": 60,
+    "image": "https://via.placeholder.com/150?text=Producto+13"
+  },
+  {
+    "id": 14,
+    "name": "Producto 14",
+    "description": "Descripción del producto 14",
+    "category": "navidad",
+    "price": 10,
+    "orders": 80,
+    "image": "https://via.placeholder.com/150?text=Producto+14"
+  },
+  {
+    "id": 15,
+    "name": "Producto 15",
+    "description": "Descripción del producto 15",
+    "category": "cumpleaños",
+    "price": 20,
+    "orders": 10,
+    "image": "https://via.placeholder.com/150?text=Producto+15"
+  },
+  {
+    "id": 16,
+    "name": "Producto 16",
+    "description": "Descripción del producto 16",
+    "category": "boda 2",
+    "price": 18,
+    "orders": 55,
+    "image": "https://via.placeholder.com/150?text=Producto+16"
+  },
+  {
+    "id": 17,
+    "name": "Producto 17",
+    "description": "Descripción del producto 17",
+    "category": "cumpleaños",
+    "price": 30,
+    "orders": 30,
+    "image": "https://via.placeholder.com/150?text=Producto+17"
+  },
+  {
+    "id": 18,
+    "name": "Producto 18",
+    "description": "Descripción del producto 18",
+    "category": "navidad",
+    "price": 5,
+    "orders": 60,
+    "image": "https://via.placeholder.com/150?text=Producto+18"
+  },
+  {
+    "id": 19,
+    "name": "Producto 19",
+    "description": "Descripción del producto 19",
+    "category": "boda 2",
+    "price": 40,
+    "orders": 50,
+    "image": "https://via.placeholder.com/150?text=Producto+19"
+  },
+  {
+    "id": 20,
+    "name": "Producto 20",
+    "description": "Descripción del producto 20",
+    "category": "cumpleaños",
+    "price": 14,
+    "orders": 70,
+    "image": "https://via.placeholder.com/150?text=Producto+20"
+  },
+  {
+    "id": 21,
+    "name": "Producto 21",
+    "description": "Descripción del producto 21",
+    "category": "navidad",
+    "price": 9,
+    "orders": 35,
+    "image": "https://via.placeholder.com/150?text=Producto+21"
+  },
+  {
+    "id": 22,
+    "name": "Producto 22",
+    "description": "Descripción del producto 22",
+    "category": "boda 2",
+    "price": 25,
+    "orders": 40,
+    "image": "https://via.placeholder.com/150?text=Producto+22"
+  },
+  {
+    "id": 23,
+    "name": "Producto 23",
+    "description": "Descripción del producto 23",
+    "category": "cumpleaños",
+    "price": 28,
+    "orders": 50,
+    "image": "https://via.placeholder.com/150?text=Producto+23"
+  },
+  {
+    "id": 24,
+    "name": "Producto 24",
+    "description": "Descripción del producto 24",
+    "category": "navidad",
+    "price": 16,
+    "orders": 30,
+    "image": "https://via.placeholder.com/150?text=Producto+24"
+  },
+  {
+    "id": 25,
+    "name": "Producto 25",
+    "description": "Tortas bañada en chocolate",
+    "category": "tortas",
+    "price": 55,
+    "orders": 75,
+    "image": "https://dxnn4n4cam0ol.cloudfront.net/media/catalog/product/n/u/nueva_foto_torta_de_chocolate_12_porciones_.jpeg"
+  },
+  {
+    "id": 26,
+    "name": "Producto 26",
+    "description": "Descripción del producto 26",
+    "category": "cumpleaños",
+    "price": 22,
+    "orders": 30,
+    "image": "https://via.placeholder.com/150?text=Producto+26"
+  },
+  {
+    "id": 27,
+    "name": "Producto 27",
+    "description": "Descripción del producto 27",
+    "category": "boda 2",
+    "price": 60,
+    "orders": 45,
+    "image": "https://via.placeholder.com/150?text=Producto+27"
+  },
+  {
+    "id": 28,
+    "name": "Producto 28",
+    "description": "Descripción del producto 28",
+    "category": "cumpleaños",
+    "price": 12,
+    "orders": 80,
+    "image": "https://via.placeholder.com/150?text=Producto+28"
+  },
+  {
+    "id": 29,
+    "name": "Producto 29",
+    "description": "Descripción del producto 29",
+    "category": "navidad",
+    "price": 33,
+    "orders": 55,
+    "image": "https://via.placeholder.com/150?text=Producto+29"
+  },
+  {
+    "id": 30,
+    "name": "Producto 30",
+    "description": "Descripción del producto 30",
+    "category": "boda 2",
+    "price": 17,
+    "orders": 60,
+    "image": "https://via.placeholder.com/150?text=Producto+30"
+  },
+  {
+    "id": 31,
+    "name": "Producto 31",
+    "description": "Descripción del producto 31",
+    "category": "cumpleaños",
+    "price": 14,
+    "orders": 40,
+    "image": "https://via.placeholder.com/150?text=Producto+31"
+  },
+  {
+    "id": 32,
+    "name": "Producto 32",
+    "description": "Descripción del producto 32",
+    "category": "navidad",
+    "price": 40,
+    "orders": 50,
+    "image": "https://via.placeholder.com/150?text=Producto+32"
+  },
+  {
+    "id": 33,
+    "name": "Producto 33",
+    "description": "Descripción del producto 33",
+    "category": "boda 2",
+    "price": 45,
+    "orders": 20,
+    "image": "https://via.placeholder.com/150?text=Producto+33"
+  },
+  {
+    "id": 34,
+    "name": "Producto 34",
+    "description": "Descripción del producto 34",
+    "category": "cumpleaños",
+    "price": 18,
+    "orders": 25,
+    "image": "https://via.placeholder.com/150?text=Producto+34"
+  },
+  {
+    "id": 35,
+    "name": "Producto 35",
+    "description": "Descripción del producto 35",
+    "category": "navidad",
+    "price": 7,
+    "orders": 10,
+    "image": "https://via.placeholder.com/150?text=Producto+35"
+  },
+  {
+    "id": 36,
+    "name": "Producto 36",
+    "description": "Descripción del producto 36",
+    "category": "boda 2",
+    "price": 30,
+    "orders": 40,
+    "image": "https://via.placeholder.com/150?text=Producto+36"
+  },
+  {
+    "id": 37,
+    "name": "Producto 37",
+    "description": "Descripción del producto 37",
+    "category": "cumpleaños",
+    "price": 8,
+    "orders": 30,
+    "image": "https://via.placeholder.com/150?text=Producto+37"
+  },
+  {
+    "id": 38,
+    "name": "Producto 38",
+    "description": "Descripción del producto 38",
+    "category": "navidad",
+    "price": 25,
+    "orders": 20,
+    "image": "https://via.placeholder.com/150?text=Producto+38"
+  },
+  {
+    "id": 39,
+    "name": "Producto 39",
+    "description": "Descripción del producto 39",
+    "category": "boda 2",
+    "price": 35,
+    "orders": 15,
+    "image": "https://via.placeholder.com/150?text=Producto+39"
+  },
+  {
+    "id": 40,
+    "name": "Producto 40",
+    "description": "Descripción del producto 40",
+    "category": "cumpleaños",
+    "price": 19,
+    "orders": 50,
+    "image": "https://via.placeholder.com/150?text=Producto+40"
+  }
+]
