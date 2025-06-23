@@ -34,7 +34,7 @@ import {
 } from "react-icons/ai";
 import BarcodeScanner from "../../components/rolSuperAdmin/BarCodeScanner";
 import { useAuth } from "../../components/AuthContext";
-import ImageUploadModal from "../../components/rolRepartidor/ImageUploadModal";
+import ImageUploadModal from "../../components/ImageUploadModal";
 import EstadisticasModal from "./EstadisticasModal";
 import ModalAsignarPedidos from "../../components/rolSuperAdmin/ModalAsignarPedidos";
 import { BiBarcode, BiLineChart } from "react-icons/bi";
