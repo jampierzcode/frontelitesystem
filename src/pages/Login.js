@@ -51,7 +51,7 @@ const Login = () => {
       <div className="relative col-span-2 content-image md:h-screen w-full">
         <img
           className="object-cover w-full h-full"
-          src="https://aimportcargo.com/images/2.jpg"
+          src="https://academiagoma.com/wp-content/uploads/2022/10/consejos-sacar-buenas-notas-curso-escolar-academia-goma.jpg"
           alt=""
         />
         <div className="absolute inset-0 w-full z-50 bg-gradient-to-b from-[rgba(18,19,21,0.9)] via-[rgba(184,161,72,0.9)] to-black opacity-90"></div>
@@ -64,7 +64,7 @@ const Login = () => {
       <div className="h-full flex px-6 items-center justify-center bg-white">
         <form onSubmit={handleLogin} className="bg-white p-6 rounded w-full">
           <h2 className="text-2xl font-bold mb-4 text-center">
-            System Aimport Envios
+            System Academy Élite
           </h2>
           {/* <h2 className="text-sm font-bold mb-4">Iniciar sesión</h2> */}
           {error ? (

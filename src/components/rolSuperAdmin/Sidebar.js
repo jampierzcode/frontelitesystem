@@ -47,11 +47,11 @@ const Sidebar = ({ open, setOpen }) => {
 
     {
       is_title_head: true,
-      title_head: "Envíos",
+      title_head: "Inscripciones",
       items: [
         {
-          title: "Pedidos",
-          url: "/pedidos",
+          title: "Inscritos",
+          url: "/inscritos",
           icon: <FaTags />,
         },
       ],

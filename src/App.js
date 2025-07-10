@@ -22,6 +22,7 @@ import Generador from "./pages/superadmin/Generador";
 import SqlGenerator from "./pages/superadmin/SqlGenerator";
 import ExcelUpload from "./pages/superadmin/ExcelUpload";
 import SedesManager from "./pages/superadmin/SedesManager";
+import InscritosManager from "./pages/superadmin/InscritosManager";
 
 function App() {
   return (
@@ -39,6 +40,16 @@ function App() {
               <PrivateRoute roles={["superadmin"]}>
                 <LayoutSuperadmin>
                   <SedesManager />
+                </LayoutSuperadmin>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/inscritos"
+            element={
+              <PrivateRoute roles={["superadmin"]}>
+                <LayoutSuperadmin>
+                  <InscritosManager />
                 </LayoutSuperadmin>
               </PrivateRoute>
             }
