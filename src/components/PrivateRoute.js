@@ -11,7 +11,7 @@ const PrivateRoute = ({ children, roles }) => {
       return <Navigate to="/login" />;
     }
 
-    if (roles && !roles.includes(auth.user.rol.name)) {
+    if (roles && !roles.includes(auth.user?.role?.name)) {
       // Si el usuario no tiene el rol adecuado, redirige a una página 403 o dashboard
       return <Navigate to="/forbidden" />;
     }

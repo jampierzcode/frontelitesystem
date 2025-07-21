@@ -23,6 +23,10 @@ import SqlGenerator from "./pages/superadmin/SqlGenerator";
 import ExcelUpload from "./pages/superadmin/ExcelUpload";
 import SedesManager from "./pages/superadmin/SedesManager";
 import InscritosManager from "./pages/superadmin/InscritosManager";
+import Personas from "./pages/superadmin/Personas";
+import Ciclos from "./pages/superadmin/Ciclos";
+import ConfiguracionPagos from "./components/rolSuperAdmin/ConfiguracionPagos";
+import Matriculas from "./pages/superadmin/Matriculas";
 
 function App() {
   return (
@@ -45,6 +49,46 @@ function App() {
             }
           />
           <Route
+            path="/personas"
+            element={
+              <PrivateRoute roles={["superadmin"]}>
+                <LayoutSuperadmin>
+                  <Personas />
+                </LayoutSuperadmin>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/ciclos"
+            element={
+              <PrivateRoute roles={["superadmin"]}>
+                <LayoutSuperadmin>
+                  <Ciclos />
+                </LayoutSuperadmin>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/configuracion_pagos"
+            element={
+              <PrivateRoute roles={["superadmin"]}>
+                <LayoutSuperadmin>
+                  <ConfiguracionPagos />
+                </LayoutSuperadmin>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/matriculas"
+            element={
+              <PrivateRoute roles={["superadmin"]}>
+                <LayoutSuperadmin>
+                  <Matriculas />
+                </LayoutSuperadmin>
+              </PrivateRoute>
+            }
+          />
+          <Route
             path="/inscritos"
             element={
               <PrivateRoute roles={["superadmin"]}>
@@ -54,16 +98,7 @@ function App() {
               </PrivateRoute>
             }
           />
-          <Route
-            path="/pedidos"
-            element={
-              <PrivateRoute roles={["superadmin"]}>
-                <LayoutSuperadmin>
-                  <PedidoManager />
-                </LayoutSuperadmin>
-              </PrivateRoute>
-            }
-          />
+
           <Route
             path="/usuarios"
             element={

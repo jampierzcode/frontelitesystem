@@ -6,7 +6,7 @@ import { BsArrowLeftShort, BsArrowRightShort } from "react-icons/bs";
 import { IoSpeedometerOutline } from "react-icons/io5";
 import { useAuth } from "../AuthContext";
 import { AiOutlineUser } from "react-icons/ai";
-import { FaHome, FaTags } from "react-icons/fa";
+import { FaHome, FaTags, FaUsers } from "react-icons/fa";
 
 const Sidebar = ({ open, setOpen }) => {
   const { auth } = useAuth();
@@ -25,34 +25,44 @@ const Sidebar = ({ open, setOpen }) => {
       ],
     },
     {
-      is_title_head: false,
+      is_title_head: true,
+      title_head: "Registros",
       items: [
         {
-          title: "Usuarios",
-          url: "/usuarios",
-          icon: <AiOutlineUser />,
+          title: "Personas",
+          url: "/personas",
+          icon: <FaTags />,
+        },
+        {
+          title: "Matriculas",
+          url: "/matriculas",
+          icon: <FaTags />,
         },
       ],
     },
     {
-      is_title_head: false,
+      is_title_head: true,
+      title_head: "Sistema",
       items: [
         {
           title: "Sedes",
           url: "/sedes",
           icon: <FaHome />,
         },
-      ],
-    },
-
-    {
-      is_title_head: true,
-      title_head: "Inscripciones",
-      items: [
         {
-          title: "Inscritos",
-          url: "/inscritos",
+          title: "Ciclos",
+          url: "/ciclos",
           icon: <FaTags />,
+        },
+        {
+          title: "Configuracion Pagos",
+          url: "/configuracion_pagos",
+          icon: <FaTags />,
+        },
+        {
+          title: "Usuarios",
+          url: "/usuarios",
+          icon: <FaUsers />,
         },
       ],
     },
@@ -81,19 +91,19 @@ const Sidebar = ({ open, setOpen }) => {
         <div className="overflow-hidden">
           {open ? (
             <div className="flex items-center justify-center bg-dark-purple rounded">
-              <img
+              {/* <img
                 className="h-[100px] mx-auto object-contain block"
                 src="../logo.jpg"
                 alt=""
-              />
+              /> */}
             </div>
           ) : (
             <div className="flex items-center justify-center bg-dark-purple rounded">
-              <img
+              {/* <img
                 className="h-[100px] mx-auto object-contain block"
                 src="../logo.jpg"
                 alt=""
-              />
+              /> */}
             </div>
             // <img className="w-[80px]" src="./iconapp.png" alt="" />
           )}
@@ -106,9 +116,9 @@ const Sidebar = ({ open, setOpen }) => {
           />
           <div className={`${!open && "scale-0"} overflow-hidden`}>
             <h1 className="text-lg font-bold text-start overflow-hidden text-ellipsis">
-              {auth.user.nombre}
+              {auth.user.person.nombre}
             </h1>
-            <h1 className="text-sm text-start">{auth.user.email}</h1>
+            <h1 className="text-sm text-start">{auth.user.person.email}</h1>
             <span className="text-sm font-bold text-start">superadmin</span>
           </div>
         </div>

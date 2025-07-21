@@ -14,7 +14,7 @@ const Login = () => {
   const navigate = useNavigate();
   useEffect(() => {
     if (auth.user) {
-      const role = auth.user.rol.name; // Supongamos que el rol está en user.role
+      const role = auth?.user?.role?.name; // Supongamos que el rol está en user.role
       console.log(role);
       if (role === "superadmin") {
         navigate("/inscritos"); // Redirigir a la ruta de usuarios

@@ -14,7 +14,7 @@ import apiAcademy from "../../components/auth/apiAcademy";
 
 const { Option } = Select;
 
-const InscritosManager = () => {
+const Personas = () => {
   const [personas, setPersonas] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -182,4 +182,4 @@ const InscritosManager = () => {
   );
 };
 
-export default InscritosManager;
+export default Personas;
