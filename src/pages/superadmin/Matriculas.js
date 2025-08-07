@@ -87,30 +87,66 @@ const Matriculas = () => {
     try {
       const values = await form.validateFields();
 
-      // Primero actualizar o crear estudiante si no existe
-      const data_estudiante = await apiAcademy.post("/estudiantes", {
+      const dataEstudiante = await apiAcademy.post("/estudiantes", {
         personId: values.person_id,
         nombreApoderado: values.nombre_apoderado,
         numeroApoderado: values.numero_apoderado,
       });
-      console.log(data_estudiante);
 
-      // Crear matricula
-      await apiAcademy.post("/matriculas", {
-        estudianteId: data_estudiante.data.data.id,
+      const matriculaPayload = {
+        estudianteId: dataEstudiante.data.data.id,
         cicloId: values.ciclo_id,
         modalidad: values.modalidad,
         turno: values.turno,
         precioMatricula: values.precio_matricula,
         precioMensualidad: values.precio_mensualidad,
-        estado: "pendiente",
-      });
+        estado: values.estado || "pendiente",
+      };
 
-      message.success("Matrícula creada");
+      if (currentMatricula) {
+        // Editar
+        await apiAcademy.put(
+          `/matriculas/${currentMatricula.id}`,
+          matriculaPayload
+        );
+        message.success("Matrícula actualizada");
+      } else {
+        // Crear
+        await apiAcademy.post("/matriculas", matriculaPayload);
+        message.success("Matrícula creada");
+      }
+
       setIsModalOpen(false);
+      setCurrentMatricula(null);
       fetchData();
     } catch (err) {
-      message.error("Error al crear matrícula");
+      message.error("Error al guardar matrícula");
+    }
+  };
+
+  const openEditMatricula = (matricula) => {
+    setCurrentMatricula(matricula);
+    form.setFieldsValue({
+      person_id: matricula.estudiante.person.id,
+      nombre_apoderado: matricula.estudiante.nombreApoderado,
+      numero_apoderado: matricula.estudiante.numeroApoderado,
+      ciclo_id: matricula.ciclo.id,
+      modalidad: matricula.modalidad,
+      turno: matricula.turno,
+      precio_matricula: matricula.precioMatricula,
+      precio_mensualidad: matricula.precioMensualidad,
+      estado: matricula.estado,
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteMatricula = async (record) => {
+    try {
+      await apiAcademy.delete(`/matriculas/${record.id}`);
+      message.success("Matrícula eliminada");
+      fetchData();
+    } catch (err) {
+      message.error("Error al eliminar matrícula");
     }
   };
 
@@ -126,7 +162,7 @@ const Matriculas = () => {
 
       const formData = new FormData();
       formData.append("folder", "vouchers");
-      formData.append("file", values.voucher[0].originFileObj);
+      formData.append("files", values.voucher[0].originFileObj);
 
       // Subir imagen al API externo
       const uploadRes = await axios.post(
@@ -153,6 +189,21 @@ const Matriculas = () => {
       message.error("Error al generar pago");
     }
   };
+  const [historialPagos, setHistorialPagos] = useState([]);
+  const [isHistorialModalOpen, setIsHistorialModalOpen] = useState(false);
+
+  const openHistorialPagos = async (matricula) => {
+    try {
+      const res = await apiAcademy.get("/pagos");
+      const pagosFiltrados = res.data.data.filter(
+        (p) => p.matriculaId === matricula.id
+      );
+      setHistorialPagos(pagosFiltrados);
+      setIsHistorialModalOpen(true);
+    } catch (err) {
+      message.error("Error al cargar historial de pagos");
+    }
+  };
 
   const columns = [
     { title: "ID", dataIndex: "id", key: "id" },
@@ -177,12 +228,26 @@ const Matriculas = () => {
     {
       title: "Acciones",
       render: (_, record) => (
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {record.estado === "pendiente" && (
             <Button onClick={() => openPagoModal(record)} size="small">
               Generar Pago
             </Button>
           )}
+          <Button onClick={() => openHistorialPagos(record)} size="small">
+            Historial
+          </Button>
+          <Button onClick={() => openEditMatricula(record)} size="small">
+            Editar
+          </Button>
+          <Popconfirm
+            title="¿Estás seguro de eliminar esta matrícula?"
+            onConfirm={() => handleDeleteMatricula(record)}
+          >
+            <Button danger size="small">
+              Eliminar
+            </Button>
+          </Popconfirm>
         </div>
       ),
     },
@@ -332,7 +397,33 @@ const Matriculas = () => {
               <Button icon={<UploadOutlined />}>Subir Voucher</Button>
             </Upload>
           </Form.Item>
+          <Form.Item label="Estado" name="estado">
+            <Select>
+              <Option value="pendiente">Pendiente</Option>
+              <Option value="matriculado">Matriculado</Option>
+            </Select>
+          </Form.Item>
         </Form>
+      </Modal>
+      <Modal
+        title="Historial de Pagos"
+        open={isHistorialModalOpen}
+        onCancel={() => setIsHistorialModalOpen(false)}
+        footer={null}
+      >
+        <Table
+          dataSource={historialPagos}
+          columns={[
+            { title: "ID", dataIndex: "id" },
+            { title: "Tipo", dataIndex: "tipo" },
+            { title: "Monto", dataIndex: "monto" },
+            { title: "Método", dataIndex: "metodo" },
+            { title: "Estado", dataIndex: "estado" },
+          ]}
+          rowKey="id"
+          size="small"
+          pagination={false}
+        />
       </Modal>
     </div>
   );

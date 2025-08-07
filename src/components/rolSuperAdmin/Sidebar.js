@@ -116,9 +116,9 @@ const Sidebar = ({ open, setOpen }) => {
           />
           <div className={`${!open && "scale-0"} overflow-hidden`}>
             <h1 className="text-lg font-bold text-start overflow-hidden text-ellipsis">
-              {auth.user.person.nombre}
+              {/* {auth.user.person.nombre} */}
             </h1>
-            <h1 className="text-sm text-start">{auth.user.person.email}</h1>
+            <h1 className="text-sm text-start">{auth.user.email}</h1>
             <span className="text-sm font-bold text-start">superadmin</span>
           </div>
         </div>
