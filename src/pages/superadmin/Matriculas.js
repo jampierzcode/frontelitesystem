@@ -9,11 +9,14 @@ import {
   message,
   Popconfirm,
   Upload,
+  Image,
 } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 
 import axios from "axios";
 import apiAcademy from "../../components/auth/apiAcademy";
+import dayjs from "dayjs";
+import { FaEye, FaEyeSlash } from "react-icons/fa6";
 
 const { Option } = Select;
 
@@ -64,46 +67,52 @@ const Matriculas = () => {
   };
 
   const handleModalidadChange = (value) => {
-    setSelectedModalidad(value);
-
-    const matriculaCosto = costos.find(
-      (c) =>
-        c.nombre.toLowerCase().includes("matricula") &&
-        c.nombre.toLowerCase().includes(value)
-    );
-    const mensualidadCosto = costos.find(
-      (c) =>
-        c.nombre.toLowerCase().includes("mensualidad") &&
-        c.nombre.toLowerCase().includes(value)
-    );
-
-    form.setFieldsValue({
-      precio_matricula: matriculaCosto?.precio || 0,
-      precio_mensualidad: mensualidadCosto?.precio || 0,
-    });
+    console.log(value);
+    const ciclo_id = form.getFieldValue("ciclo_id");
+    if (ciclo_id === null || ciclo_id === 0) {
+      message.warning("Debes seleccionar primero un ciclo");
+    } else {
+      const cicloCurrent = ciclos.find((c) => c.id === ciclo_id);
+      console.log(cicloCurrent);
+      if (value === "presencial") {
+        form.setFieldsValue({
+          precio_matricula: cicloCurrent?.montoMatriculaPresencial,
+          precio_mensualidad: cicloCurrent?.montoMensualidadPresencial,
+        });
+      } else {
+        form.setFieldsValue({
+          precio_matricula: cicloCurrent?.montoMatriculaVirtual,
+          precio_mensualidad: cicloCurrent?.montoMensualidadVirtual,
+        });
+      }
+      setSelectedModalidad(value);
+    }
+  };
+  const handleTipoPago = (value) => {
+    if (value === "matricula") {
+      pagoForm.setFieldsValue({
+        monto: currentMatricula.precioMatricula,
+      });
+    } else {
+      pagoForm.setFieldsValue({
+        monto: currentMatricula.precioMensualidad,
+      });
+    }
   };
 
   const handleCreateMatricula = async () => {
     try {
       const values = await form.validateFields();
 
-      const dataEstudiante = await apiAcademy.post("/estudiantes", {
-        personId: values.person_id,
-        nombreApoderado: values.nombre_apoderado,
-        numeroApoderado: values.numero_apoderado,
-      });
-
-      const matriculaPayload = {
-        estudianteId: dataEstudiante.data.data.id,
-        cicloId: values.ciclo_id,
-        modalidad: values.modalidad,
-        turno: values.turno,
-        precioMatricula: values.precio_matricula,
-        precioMensualidad: values.precio_mensualidad,
-        estado: values.estado || "pendiente",
-      };
-
       if (currentMatricula) {
+        const matriculaPayload = {
+          cicloId: values.ciclo_id,
+          modalidad: values.modalidad,
+          turno: values.turno,
+          precioMatricula: values.precio_matricula,
+          precioMensualidad: values.precio_mensualidad,
+          estado: values.estado || "pendiente",
+        };
         // Editar
         await apiAcademy.put(
           `/matriculas/${currentMatricula.id}`,
@@ -111,6 +120,31 @@ const Matriculas = () => {
         );
         message.success("Matrícula actualizada");
       } else {
+        let idEstudiante = null;
+        const persona = personas.find((p) => p.id === values.person_id);
+        console.log(persona);
+        console.log(persona.estudiante?.id);
+        if (persona.estudiante.id === undefined) {
+          const dataEstudiante = await apiAcademy.post("/estudiantes", {
+            personId: values.person_id,
+            nombreApoderado: values.nombre_apoderado,
+            numeroApoderado: values.numero_apoderado,
+          });
+          idEstudiante = dataEstudiante.data.data.id;
+        } else {
+          idEstudiante = persona.estudiante.id;
+        }
+
+        const matriculaPayload = {
+          estudianteId: idEstudiante,
+          cicloId: values.ciclo_id,
+          modalidad: values.modalidad,
+          turno: values.turno,
+          precioMatricula: values.precio_matricula,
+          precioMensualidad: values.precio_mensualidad,
+          estado: values.estado || "pendiente",
+        };
+        console.log(currentMatricula);
         // Crear
         await apiAcademy.post("/matriculas", matriculaPayload);
         message.success("Matrícula creada");
@@ -120,6 +154,7 @@ const Matriculas = () => {
       setCurrentMatricula(null);
       fetchData();
     } catch (err) {
+      console.log(err);
       message.error("Error al guardar matrícula");
     }
   };
@@ -206,7 +241,6 @@ const Matriculas = () => {
   };
 
   const columns = [
-    { title: "ID", dataIndex: "id", key: "id" },
     {
       title: "Estudiante",
       dataIndex: ["estudiante", "person", "nombre"],
@@ -225,6 +259,16 @@ const Matriculas = () => {
       key: "precioMensualidad",
     },
     { title: "Estado", dataIndex: "estado", key: "estado" },
+    { title: "Ciclo", dataIndex: ["ciclo", "nombre"], key: "ciclo" },
+    {
+      title: "Tiempo Ciclo",
+      render: (_, record) => {
+        return `${dayjs(record.ciclo.fechaInicio).format(
+          "DD-MM-YYYY"
+        )} -  ${dayjs(record.ciclo.fechaFin).format("DD-MM-YYYY")}`;
+      },
+    },
+
     {
       title: "Acciones",
       render: (_, record) => (
@@ -252,6 +296,13 @@ const Matriculas = () => {
       ),
     },
   ];
+  const [voucherCurrentUrl, setVoucherCurrentUrl] = useState(null);
+  const [isOpenVocuher, setIsOpenVocuher] = useState(false);
+  const showVoucher = (id) => {
+    const voucherUrl = historialPagos.find((m) => m.id === id).imagenVoucherUrl;
+    setVoucherCurrentUrl(voucherUrl);
+    setIsOpenVocuher(true);
+  };
 
   return (
     <div className="p-6 bg-white rounded-lg shadow-md">
@@ -278,7 +329,7 @@ const Matriculas = () => {
       >
         <Form layout="vertical" form={form}>
           <Form.Item
-            label="Estudiante"
+            label="Persona Estudiante"
             name="person_id"
             rules={[{ required: true }]}
           >
@@ -308,7 +359,14 @@ const Matriculas = () => {
           </Form.Item>
 
           <Form.Item label="Ciclo" name="ciclo_id" rules={[{ required: true }]}>
-            <Select placeholder="Seleccione ciclo">
+            <Select
+              placeholder="Seleccione ciclo"
+              onChange={() => {
+                form.setFieldValue("modalidad", "");
+                form.setFieldValue("precio_matricula", 0);
+                form.setFieldValue("precio_mensualidad", 0);
+              }}
+            >
               {ciclos.map((c) => (
                 <Option key={c.id} value={c.id}>
                   {c.nombre}
@@ -342,6 +400,12 @@ const Matriculas = () => {
           <Form.Item label="Precio Mensualidad" name="precio_mensualidad">
             <Input readOnly />
           </Form.Item>
+          <Form.Item label="Estado" name="estado">
+            <Select>
+              <Option value="pendiente">Pendiente</Option>
+              <Option value="matriculado">Matriculado</Option>
+            </Select>
+          </Form.Item>
         </Form>
       </Modal>
 
@@ -359,7 +423,7 @@ const Matriculas = () => {
             name="tipo"
             rules={[{ required: true }]}
           >
-            <Select>
+            <Select onChange={handleTipoPago}>
               <Option value="matricula">Matrícula</Option>
               <Option value="mensualidad">Mensualidad</Option>
             </Select>
@@ -397,12 +461,6 @@ const Matriculas = () => {
               <Button icon={<UploadOutlined />}>Subir Voucher</Button>
             </Upload>
           </Form.Item>
-          <Form.Item label="Estado" name="estado">
-            <Select>
-              <Option value="pendiente">Pendiente</Option>
-              <Option value="matriculado">Matriculado</Option>
-            </Select>
-          </Form.Item>
         </Form>
       </Modal>
       <Modal
@@ -410,20 +468,48 @@ const Matriculas = () => {
         open={isHistorialModalOpen}
         onCancel={() => setIsHistorialModalOpen(false)}
         footer={null}
+        width={800}
       >
         <Table
           dataSource={historialPagos}
           columns={[
-            { title: "ID", dataIndex: "id" },
             { title: "Tipo", dataIndex: "tipo" },
             { title: "Monto", dataIndex: "monto" },
             { title: "Método", dataIndex: "metodo" },
             { title: "Estado", dataIndex: "estado" },
+            { title: "Codigo de Operacion", dataIndex: "codigoOperacion" },
+            {
+              title: "Voucher",
+              render: (_, record) => {
+                return (
+                  <button
+                    className="bg-white rounded shadow flex gap-4 items-center px-3 py-2"
+                    onClick={() => showVoucher(record.id)}
+                  >
+                    Ver <FaEye />
+                  </button>
+                );
+              },
+            },
+            {
+              title: "Fecha Pago",
+              render: (_, record) => {
+                return `${dayjs(record.createdAt).format("DD-MM-YYYY")}`;
+              },
+            },
           ]}
           rowKey="id"
           size="small"
           pagination={false}
         />
+      </Modal>
+      <Modal
+        title="Imagen"
+        open={isOpenVocuher}
+        onCancel={() => setIsOpenVocuher(false)}
+        footer={null}
+      >
+        <Image width={250} preview={true} src={voucherCurrentUrl} />
       </Modal>
     </div>
   );

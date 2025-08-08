@@ -97,6 +97,39 @@ export default function Ciclos() {
           { title: "Nombre", dataIndex: "nombre" },
           { title: "Fecha Inicio", dataIndex: "fechaInicio" },
           { title: "Fecha Fin", dataIndex: "fechaFin" },
+          {
+            title: "$ Presencial",
+            render: (_, record) => {
+              return (
+                <>
+                  <span className="text-nowrap w-full text-sm">
+                    Matricula: ${record.montoMatriculaPresencial}
+                  </span>{" "}
+                  <br />
+                  <span className="text-nowrap w-full text-sm">
+                    Mensualidad: ${record.montoMensualidadPresencial}
+                  </span>
+                </>
+              );
+            },
+          },
+          {
+            title: "$ Virtual",
+            render: (_, record) => {
+              return (
+                <>
+                  <span className="text-nowrap w-full text-sm">
+                    Matricula: ${record.montoMatriculaVirtual}
+                  </span>{" "}
+                  <br />
+                  <span className="text-nowrap w-full text-sm">
+                    Mensualidad: ${record.montoMensualidadVirtual}
+                  </span>
+                </>
+              );
+            },
+          },
+          { title: "Fecha Fin", dataIndex: "fechaFin" },
           { title: "Estado", dataIndex: "status" },
           {
             title: "Acciones",
@@ -133,6 +166,52 @@ export default function Ciclos() {
           >
             <Input />
           </Form.Item>
+          <div className="grid grid-cols-2 gap-4">
+            <Form.Item
+              label="Precio Matricula presencial"
+              name="montoMatriculaPresencial"
+              rules={[
+                { required: true, message: "Ingrese el valor de la matricula" },
+              ]}
+            >
+              <Input type="number" />
+            </Form.Item>
+            <Form.Item
+              label="Precio Mensualidad presencial"
+              name="montoMensualidadPresencial"
+              rules={[
+                {
+                  required: true,
+                  message: "Ingrese el valor de la mensualidad",
+                },
+              ]}
+            >
+              <Input type="number" />
+            </Form.Item>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Form.Item
+              label="Precio Matricula virtual"
+              name="montoMatriculaVirtual"
+              rules={[
+                { required: true, message: "Ingrese el valor de la matricula" },
+              ]}
+            >
+              <Input type="number" />
+            </Form.Item>
+            <Form.Item
+              label="Precio Mensualidad virtual"
+              name="montoMensualidadVirtual"
+              rules={[
+                {
+                  required: true,
+                  message: "Ingrese el valor de la mensualidad",
+                },
+              ]}
+            >
+              <Input type="number" />
+            </Form.Item>
+          </div>
 
           <Form.Item
             label="Fecha de Inicio"
