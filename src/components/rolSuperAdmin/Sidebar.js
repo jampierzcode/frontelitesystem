@@ -7,6 +7,7 @@ import { IoSpeedometerOutline } from "react-icons/io5";
 import { useAuth } from "../AuthContext";
 import { AiOutlineUser } from "react-icons/ai";
 import { FaHome, FaTags, FaUsers } from "react-icons/fa";
+import { FaPaperPlane, FaPencil, FaTimeline } from "react-icons/fa6";
 
 const Sidebar = ({ open, setOpen }) => {
   const { auth } = useAuth();
@@ -37,6 +38,27 @@ const Sidebar = ({ open, setOpen }) => {
           title: "Matriculas",
           url: "/matriculas",
           icon: <FaTags />,
+        },
+        {
+          title: "Asistencias",
+          url: "/asistencias",
+          icon: <FaTimeline />,
+        },
+      ],
+    },
+    {
+      is_title_head: true,
+      title_head: "Examenes",
+      items: [
+        {
+          title: "Examenes Simulacro",
+          url: "/examenesSimulacro",
+          icon: <FaPaperPlane />,
+        },
+        {
+          title: "Notas",
+          url: "/notasSimulacro",
+          icon: <FaPencil />,
         },
       ],
     },

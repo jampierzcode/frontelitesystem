@@ -27,6 +27,9 @@ import Personas from "./pages/superadmin/Personas";
 import Ciclos from "./pages/superadmin/Ciclos";
 import ConfiguracionPagos from "./components/rolSuperAdmin/ConfiguracionPagos";
 import Matriculas from "./pages/superadmin/Matriculas";
+import Asistencias from "./pages/superadmin/Asistencias";
+import ExamenesSimulacro from "./pages/superadmin/ExamenesSimulacro";
+import NotasSimulacro from "./pages/superadmin/NotasSimulacro";
 
 function App() {
   return (
@@ -84,6 +87,36 @@ function App() {
               <PrivateRoute roles={["superadmin"]}>
                 <LayoutSuperadmin>
                   <Matriculas />
+                </LayoutSuperadmin>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/asistencias"
+            element={
+              <PrivateRoute roles={["superadmin"]}>
+                <LayoutSuperadmin>
+                  <Asistencias />
+                </LayoutSuperadmin>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/notasSimulacro"
+            element={
+              <PrivateRoute roles={["superadmin"]}>
+                <LayoutSuperadmin>
+                  <NotasSimulacro />
+                </LayoutSuperadmin>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/examenesSimulacro"
+            element={
+              <PrivateRoute roles={["superadmin"]}>
+                <LayoutSuperadmin>
+                  <ExamenesSimulacro />
                 </LayoutSuperadmin>
               </PrivateRoute>
             }

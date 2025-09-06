@@ -123,8 +123,9 @@ const Matriculas = () => {
         let idEstudiante = null;
         const persona = personas.find((p) => p.id === values.person_id);
         console.log(persona);
-        console.log(persona.estudiante?.id);
-        if (persona.estudiante.id === undefined) {
+
+        if (persona.estudiante === null) {
+          console.log("id");
           const dataEstudiante = await apiAcademy.post("/estudiantes", {
             personId: values.person_id,
             nombreApoderado: values.nombre_apoderado,
