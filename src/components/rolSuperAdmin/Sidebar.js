@@ -5,9 +5,20 @@ import LogoutButton from "../LogoutButton";
 import { BsArrowLeftShort, BsArrowRightShort } from "react-icons/bs";
 import { IoSpeedometerOutline } from "react-icons/io5";
 import { useAuth } from "../AuthContext";
-import { AiOutlineUser } from "react-icons/ai";
-import { FaHome, FaTags, FaUsers } from "react-icons/fa";
-import { FaPaperPlane, FaPencil, FaTimeline } from "react-icons/fa6";
+
+import {
+  FaUserFriends,
+  FaUserGraduate,
+  FaChalkboardTeacher,
+  FaClipboardList,
+} from "react-icons/fa";
+import { MdOutlineClass, MdOutlineAssignment } from "react-icons/md";
+import { HiOutlineAcademicCap } from "react-icons/hi2";
+import { FaBuilding, FaUsersCog } from "react-icons/fa";
+import { RiUserSettingsLine } from "react-icons/ri";
+import { LuNotebookPen } from "react-icons/lu";
+import { TbFileAnalytics } from "react-icons/tb";
+import { FaTimeline } from "react-icons/fa6";
 
 const Sidebar = ({ open, setOpen }) => {
   const { auth } = useAuth();
@@ -27,38 +38,60 @@ const Sidebar = ({ open, setOpen }) => {
     },
     {
       is_title_head: true,
-      title_head: "Registros",
+      title_head: "Personas",
       items: [
         {
           title: "Personas",
           url: "/personas",
-          icon: <FaTags />,
-        },
-        {
-          title: "Matriculas",
-          url: "/matriculas",
-          icon: <FaTags />,
-        },
-        {
-          title: "Asistencias",
-          url: "/asistencias",
-          icon: <FaTimeline />,
+          icon: <FaUserFriends />, // lista de personas
         },
       ],
     },
     {
       is_title_head: true,
-      title_head: "Examenes",
+      title_head: "Estudiantes",
       items: [
         {
-          title: "Examenes Simulacro",
+          title: "Estudiantes",
+          url: "/estudiantes",
+          icon: <FaUserGraduate />, // estudiantes
+        },
+        {
+          title: "Matrículas",
+          url: "/matriculas",
+          icon: <MdOutlineAssignment />, // gestión de matrículas
+        },
+        {
+          title: "Asistencias",
+          url: "/asistencias",
+          icon: <LuNotebookPen />, // pase de asistencia
+        },
+      ],
+    },
+    {
+      is_title_head: true,
+      title_head: "Profesores",
+      items: [
+        {
+          title: "Profesores",
+          url: "/profesores",
+          icon: <FaChalkboardTeacher />, // lista profesores
+        },
+      ],
+    },
+    {
+      is_title_head: true,
+      title_head: "Exámenes",
+      items: [
+        {
+          title: "Simulacros",
           url: "/examenesSimulacro",
-          icon: <FaPaperPlane />,
+          icon: <TbFileAnalytics />, // exámenes/pruebas
         },
         {
           title: "Notas",
           url: "/notasSimulacro",
-          icon: <FaPencil />,
+          icon: <HiOutlineAcademicCap />, // notas/calificaciones
         },
       ],
     },
@@ -67,32 +100,37 @@ const Sidebar = ({ open, setOpen }) => {
       title_head: "Sistema",
       items: [
         {
+          title: "Usuarios",
+          url: "/usuarios",
+          icon: <RiUserSettingsLine />, // gestión de usuarios
+        },
+        {
+          title: "Horarios",
+          url: "/horarios",
+          icon: <FaTimeline />, // gestión de usuarios
+        },
+        {
           title: "Sedes",
           url: "/sedes",
-          icon: <FaHome />,
+          icon: <FaBuilding />, // edificios/sedes
         },
         {
           title: "Ciclos",
           url: "/ciclos",
-          icon: <FaTags />,
+          icon: <MdOutlineClass />, // ciclos o cursos
         },
         {
-          title: "Configuracion Pagos",
-          url: "/configuracion_pagos",
-          icon: <FaTags />,
-        },
-        {
-          title: "Usuarios",
-          url: "/usuarios",
-          icon: <FaUsers />,
+          title: "Roles",
+          url: "/roles",
+          icon: <FaUsersCog />, // permisos/roles
         },
       ],
     },
   ];
   return (
-    <div className="">
+    <div className="position">
       <div
-        className={` z-20 h-screen bg-white shadow-lg text-light-font p-5 pt-8 ${
+        className={`z-20 bg-primary shadow-lg text-light-font p-5 pt-8 ${
           open
             ? "translate-x-0 md:translate-x-0 w-60 md:w-60"
             : "-translate-x-20 w-20 md:translate-x-0 md:block md:w-20"
@@ -101,18 +139,18 @@ const Sidebar = ({ open, setOpen }) => {
         {open ? (
           <BsArrowLeftShort
             onClick={handlerSidebar}
-            className="hidden md:block bg-white text-dark-purple rounded-full absolute -right-3 top-9 text-3xl border border-dark-purple cursor-pointer"
+            className="hidden md:block bg-white text-primary rounded-full absolute -right-3 top-9 text-3xl border border-dark-purple cursor-pointer"
           />
         ) : (
           <BsArrowRightShort
             onClick={handlerSidebar}
-            className="hidden md:block bg-white text-dark-purple rounded-full absolute -right-3 top-9 text-3xl border border-dark-purple cursor-pointer"
+            className="hidden md:block bg-white text-primary rounded-full absolute -right-3 top-9 text-3xl border border-primary cursor-pointer"
           />
         )}
 
         <div className="overflow-hidden">
           {open ? (
-            <div className="flex items-center justify-center bg-dark-purple rounded">
+            <div className="flex items-center justify-center bg-primary  rounded">
               {/* <img
                 className="h-[100px] mx-auto object-contain block"
                 src="../logo.jpg"
@@ -144,11 +182,13 @@ const Sidebar = ({ open, setOpen }) => {
             <span className="text-sm font-bold text-start">superadmin</span>
           </div>
         </div>
-        <nav className="pt-2 flex flex-col gap-2">
+        <nav className="pt-2 flex flex-col gap-2 h-auto overflow-y-auto">
           {menuSuperAdmin.map((item, index) => (
             <div key={index}>
               {item.is_title_head ? (
-                <span className="font-bold text-sm">{item.title_head}</span>
+                <span className="w-full text-secondary font-bold text-sm text-ellipsis overflow-hidden text-nowrap">
+                  {item.title_head}
+                </span>
               ) : null}
               <span>{}</span>
               {item.items.map((i, index) => {
@@ -158,8 +198,8 @@ const Sidebar = ({ open, setOpen }) => {
                     to={i.url}
                     className={({ isActive }) =>
                       isActive
-                        ? "bg-gray-100 text-dark-purple  font-bold text-sm p-2 flex gap-3 items-center rounded duration-300 transition-all"
-                        : "p-2 text-sm hover:bg-gray-100 hover:text-dark-purple  transition-all rounded duration-300 flex gap-3 items-center"
+                        ? "bg-secondary text-primary  font-bold text-sm p-2 flex gap-3 items-center rounded duration-300 transition-all"
+                        : "p-2 text-white text-sm hover:bg-secondary hover:text-primary  transition-all rounded duration-300 flex gap-3 items-center"
                     }
                   >
                     <span className="block float-left text-xl">{i.icon}</span>
@@ -171,8 +211,8 @@ const Sidebar = ({ open, setOpen }) => {
               })}
             </div>
           ))}
-          <LogoutButton open={open} />
         </nav>
+        <LogoutButton open={open} />
       </div>
       <div
         onClick={() => setOpen(false)}

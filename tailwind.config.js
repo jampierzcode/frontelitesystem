@@ -5,8 +5,8 @@ module.exports = {
     extend: {
       colors: {
         "dark-purple": "#2d3484", // Color principal
-        primary: "#2d3484", // Color principal
-        secondary: "#ebcf9e", // Color secundario
+        primary: "#0A30BC", // Color principal
+        secondary: "#DDAE5E", // Color secundario
       },
     },
   },

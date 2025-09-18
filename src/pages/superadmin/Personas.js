@@ -1,3 +1,4 @@
+// src/pages/Personas.js
 import React, { useEffect, useState } from "react";
 import {
   Table,
@@ -8,34 +9,50 @@ import {
   Select,
   message,
   Popconfirm,
+  notification,
 } from "antd";
-import axios from "axios";
 import apiAcademy from "../../components/auth/apiAcademy";
 
 const { Option } = Select;
 
 const Personas = () => {
   const [personas, setPersonas] = useState([]);
+  const [filteredPersonas, setFilteredPersonas] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [currentPerson, setCurrentPerson] = useState(null);
+  const [sedes, setSedes] = useState([]);
 
   const [form] = Form.useForm();
+  const [filterForm] = Form.useForm();
 
   const fetchPersonas = async () => {
     setLoading(true);
     try {
       const res = await apiAcademy.get("/persons");
-      setPersonas(res.data.data);
+      // tu API devuelve res.data.data
+      const data = res.data.data || [];
+      setPersonas(data);
+      setFilteredPersonas(data);
     } catch (error) {
-      message.error("Error al cargar personas");
+      notification.error({ message: "Error al cargar personas" });
     }
     setLoading(false);
   };
 
+  const fetchSedes = async () => {
+    try {
+      const res = await apiAcademy.get("/sedes");
+      setSedes(res.data.data || []);
+    } catch (err) {
+      // no crítico
+    }
+  };
+
   useEffect(() => {
     fetchPersonas();
+    fetchSedes();
   }, []);
 
   const openCreateModal = () => {
@@ -48,7 +65,16 @@ const Personas = () => {
   const openEditModal = (person) => {
     setIsEdit(true);
     setCurrentPerson(person);
-    form.setFieldsValue(person);
+    // map fields to form keys (person tiene sede_id)
+    form.setFieldsValue({
+      dni: person.dni,
+      nombre: person.nombre,
+      apellido: person.apellido,
+      whatsapp: person.whatsapp,
+      email: person.email,
+      tipo: person.tipo,
+      sedeId: person.sedeId || null,
+    });
     setIsModalOpen(true);
   };
 
@@ -66,35 +92,80 @@ const Personas = () => {
     try {
       const values = await form.validateFields();
 
-      if (isEdit) {
+      if (isEdit && currentPerson) {
         await apiAcademy.put(`/persons/${currentPerson.id}`, values);
-        message.success("Persona actualizada");
+        notification.success({ message: "Persona actualizada" });
       } else {
         await apiAcademy.post("/persons", values);
-        message.success("Persona creada");
+        notification.success({ message: "Persona creada" });
       }
 
       setIsModalOpen(false);
       fetchPersonas();
     } catch (error) {
-      message.error("Error al guardar persona");
+      notification.error({ message: "Error al guardar persona" });
     }
   };
 
+  // filtros externos
+  const handleFilter = () => {
+    const values = filterForm.getFieldsValue();
+    let data = [...personas];
+
+    if (values.nombre) {
+      data = data.filter((p) =>
+        `${p.nombre} ${p.apellido}`
+          .toLowerCase()
+          .includes(values.nombre.toLowerCase())
+      );
+    }
+    if (values.dni) {
+      data = data.filter((p) => (p.dni || "").includes(values.dni));
+    }
+    if (values.tipo) {
+      data = data.filter((p) => p.tipo === values.tipo);
+    }
+    setFilteredPersonas(data);
+  };
+
+  const handleClearFilters = () => {
+    filterForm.resetFields();
+    setFilteredPersonas(personas);
+  };
+
   const columns = [
-    { title: "ID", dataIndex: "id", key: "id" },
+    {
+      title: "ID",
+      dataIndex: "id",
+      key: "id",
+      width: 60,
+    },
+    {
+      title: "Nombre",
+      dataIndex: "nombre",
+      key: "nombre",
+      render: (_, record) => (
+        <div>
+          <div className="font-semibold">
+            {record.nombre} {record.apellido}
+          </div>
+          <div className="text-sm text-gray-500">{record.email}</div>
+        </div>
+      ),
+    },
     { title: "DNI", dataIndex: "dni", key: "dni" },
-    { title: "Nombre", dataIndex: "nombre", key: "nombre" },
-    { title: "Apellido", dataIndex: "apellido", key: "apellido" },
     { title: "WhatsApp", dataIndex: "whatsapp", key: "whatsapp" },
-    { title: "Email", dataIndex: "email", key: "email" },
     { title: "Tipo", dataIndex: "tipo", key: "tipo" },
     {
       title: "Acciones",
       key: "acciones",
       render: (_, record) => (
         <div className="flex gap-2">
-          <Button size="small" onClick={() => openEditModal(record)}>
+          <Button
+            size="small"
+            className="bg-primary text-white"
+            onClick={() => openEditModal(record)}
+          >
             Editar
           </Button>
           <Popconfirm
@@ -109,22 +180,60 @@ const Personas = () => {
           </Popconfirm>
         </div>
       ),
+      width: 180,
     },
   ];
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-xl font-bold mb-4">Gestión de Personas</h2>
-      <Button type="primary" onClick={openCreateModal} className="mb-4">
-        Crear Persona
-      </Button>
+    <div>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold">Gestión de Personas</h2>
+        <Button className="bg-primary text-white" onClick={openCreateModal}>
+          Crear Persona
+        </Button>
+      </div>
+
+      <Form
+        form={filterForm}
+        layout="inline"
+        className="mb-4 flex flex-wrap gap-2"
+      >
+        <Form.Item name="nombre">
+          <Input placeholder="Buscar por nombre o apellido" allowClear />
+        </Form.Item>
+        <Form.Item name="dni">
+          <Input placeholder="Buscar por DNI" allowClear />
+        </Form.Item>
+        <Form.Item name="tipo">
+          <Select
+            placeholder="Filtrar por tipo"
+            allowClear
+            style={{ width: 180 }}
+          >
+            <Option value="estudiante">Estudiante</Option>
+            <Option value="profesor">Profesor</Option>
+            <Option value="secretaria">Secretaria</Option>
+            <Option value="admin">Admin</Option>
+          </Select>
+        </Form.Item>
+        <Form.Item>
+          <Button className="bg-primary text-white" onClick={handleFilter}>
+            Filtrar
+          </Button>
+        </Form.Item>
+        <Form.Item>
+          <Button onClick={handleClearFilters}>Limpiar</Button>
+        </Form.Item>
+      </Form>
 
       <Table
-        dataSource={personas}
+        className="rounded-lg"
+        dataSource={filteredPersonas}
         columns={columns}
         rowKey="id"
         loading={loading}
         pagination={{ pageSize: 10 }}
+        scroll={{ x: "max-content" }}
       />
 
       <Modal
@@ -134,17 +243,14 @@ const Personas = () => {
         onCancel={() => setIsModalOpen(false)}
         okText="Guardar"
         cancelText="Cancelar"
+        okButtonProps={{ className: "bg-primary text-white" }}
       >
         <Form layout="vertical" form={form}>
           <Form.Item label="DNI" name="dni">
             <Input />
           </Form.Item>
 
-          <Form.Item
-            label="Nombre"
-            name="nombre"
-            rules={[{ required: true, message: "Campo requerido" }]}
-          >
+          <Form.Item label="Nombre" name="nombre" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
 
@@ -155,7 +261,7 @@ const Personas = () => {
           <Form.Item
             label="WhatsApp"
             name="whatsapp"
-            rules={[{ required: true, message: "Campo requerido" }]}
+            rules={[{ required: true }]}
           >
             <Input />
           </Form.Item>
@@ -164,16 +270,22 @@ const Personas = () => {
             <Input />
           </Form.Item>
 
-          <Form.Item
-            label="Tipo"
-            name="tipo"
-            rules={[{ required: true, message: "Campo requerido" }]}
-          >
+          <Form.Item label="Tipo" name="tipo" rules={[{ required: true }]}>
             <Select placeholder="Selecciona un tipo">
               <Option value="estudiante">Estudiante</Option>
               <Option value="profesor">Profesor</Option>
               <Option value="secretaria">Secretaria</Option>
               <Option value="admin">Admin</Option>
+            </Select>
+          </Form.Item>
+
+          <Form.Item label="Sede" name="sedeId">
+            <Select allowClear placeholder="Selecciona sede">
+              {sedes.map((s) => (
+                <Option key={s.id} value={s.id}>
+                  {s.nameReferential}
+                </Option>
+              ))}
             </Select>
           </Form.Item>
         </Form>

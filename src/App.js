@@ -30,6 +30,9 @@ import Matriculas from "./pages/superadmin/Matriculas";
 import Asistencias from "./pages/superadmin/Asistencias";
 import ExamenesSimulacro from "./pages/superadmin/ExamenesSimulacro";
 import NotasSimulacro from "./pages/superadmin/NotasSimulacro";
+import Estudiantes from "./pages/superadmin/Estudiantes";
+import Sedes from "./pages/superadmin/Sedes";
+import Schedules from "./pages/superadmin/Schedules";
 
 function App() {
   return (
@@ -46,7 +49,7 @@ function App() {
             element={
               <PrivateRoute roles={["superadmin"]}>
                 <LayoutSuperadmin>
-                  <SedesManager />
+                  <Sedes />
                 </LayoutSuperadmin>
               </PrivateRoute>
             }
@@ -57,6 +60,16 @@ function App() {
               <PrivateRoute roles={["superadmin"]}>
                 <LayoutSuperadmin>
                   <Personas />
+                </LayoutSuperadmin>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/estudiantes"
+            element={
+              <PrivateRoute roles={["superadmin"]}>
+                <LayoutSuperadmin>
+                  <Estudiantes />
                 </LayoutSuperadmin>
               </PrivateRoute>
             }
@@ -138,6 +151,16 @@ function App() {
               <PrivateRoute roles={["superadmin"]}>
                 <LayoutSuperadmin>
                   <Usuarios />
+                </LayoutSuperadmin>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/horarios"
+            element={
+              <PrivateRoute roles={["superadmin"]}>
+                <LayoutSuperadmin>
+                  <Schedules />
                 </LayoutSuperadmin>
               </PrivateRoute>
             }

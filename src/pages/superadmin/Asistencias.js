@@ -10,10 +10,13 @@ import {
   Card,
   Statistic,
   message,
+  Row,
+  Col,
 } from "antd";
 import dayjs from "dayjs";
 import apiAcademy from "../../components/auth/apiAcademy";
-import { PlusOutlined } from "@ant-design/icons";
+import { PlusOutlined, QrcodeOutlined } from "@ant-design/icons";
+import QrReader from "../../components/QrReader";
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
@@ -22,31 +25,47 @@ export default function Asistencias() {
   const [asistencias, setAsistencias] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [qrModalOpen, setQrModalOpen] = useState(false);
   const [form] = Form.useForm();
-  const [filtroFecha, setFiltroFecha] = useState([]);
+
+  const hoy = [dayjs().startOf("day"), dayjs().endOf("day")];
+  const [filtroFecha, setFiltroFecha] = useState(hoy);
 
   const [filtroEstado, setFiltroEstado] = useState("");
   const [resumen, setResumen] = useState({
-    total: 0,
+    totalEstudiantes: 0,
     asistieron: 0,
     porcentaje: 0,
+    estados: {},
   });
+
+  const [estudiantes, setEstudiantes] = useState([]);
+
+  useEffect(() => {
+    fetchEstudiantes();
+  }, []);
 
   useEffect(() => {
     fetchAsistencias();
   }, [filtroFecha, filtroEstado]);
 
+  const fetchEstudiantes = async () => {
+    try {
+      const res = await apiAcademy("/estudiantes");
+      setEstudiantes(res.data.data);
+      setResumen((r) => ({ ...r, totalEstudiantes: res.data.data.length }));
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   const fetchAsistencias = async () => {
     setLoading(true);
     try {
       let params = {};
-
       if (filtroFecha && filtroFecha.length === 2) {
         params.fechaInicio = filtroFecha[0].format("YYYY-MM-DD");
         params.fechaFin = filtroFecha[1].format("YYYY-MM-DD");
-      } else if (filtroFecha && filtroFecha.length === 1) {
-        params.fechaInicio = filtroFecha[0].format("YYYY-MM-DD");
-        params.fechaFin = filtroFecha[0].format("YYYY-MM-DD");
       }
 
       if (filtroEstado) {
@@ -65,10 +84,23 @@ export default function Asistencias() {
   };
 
   const calcularResumen = (data) => {
-    const total = data.length;
     const asistieron = data.filter((a) => a.estado === "presente").length;
-    const porcentaje = total > 0 ? ((asistieron / total) * 100).toFixed(1) : 0;
-    setResumen({ total, asistieron, porcentaje });
+    const totalHoy = resumen.totalEstudiantes || 0;
+    const porcentaje =
+      totalHoy > 0 ? ((asistieron / totalHoy) * 100).toFixed(1) : 0;
+
+    // conteo por estado
+    const estados = data.reduce((acc, cur) => {
+      acc[cur.estado] = (acc[cur.estado] || 0) + 1;
+      return acc;
+    }, {});
+
+    setResumen((r) => ({
+      ...r,
+      asistieron,
+      porcentaje,
+      estados,
+    }));
   };
 
   const handleCreate = async () => {
@@ -96,21 +128,32 @@ export default function Asistencias() {
       message.error("Error al guardar asistencia");
     }
   };
-  const [estudiantes, setEstudiantes] = useState([]);
 
-  const fetchEstudiantes = async () => {
-    try {
-      const res = await apiAcademy("/estudiantes");
-      console.log(res);
-      setEstudiantes(res.data.data);
-    } catch (error) {
-      console.log(error);
+  // --- LECTURA DE QR ---
+  const [data, setData] = useState("No result");
+  const handleScan = async (data) => {
+    if (data) {
+      try {
+        await apiAcademy.post("/asistencias", {
+          estudianteId: data, // el QR contiene el id del estudiante
+          fecha: dayjs().format("YYYY-MM-DD"),
+          horaEntrada: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+          estado: "presente",
+        });
+        message.success("Asistencia registrada vía QR");
+        setQrModalOpen(false);
+        fetchAsistencias();
+      } catch (error) {
+        console.error(error);
+        message.error("Error registrando asistencia con QR");
+      }
     }
   };
 
-  useEffect(() => {
-    fetchEstudiantes();
-  }, []);
+  const handleError = (err) => {
+    console.error(err);
+    message.error("Error con la cámara");
+  };
 
   const columns = [
     {
@@ -142,10 +185,7 @@ export default function Asistencias() {
       {/* Filtros */}
       <div className="flex flex-wrap gap-4 items-center">
         <RangePicker
-          value={[
-            filtroFecha[0] ? filtroFecha[0] : null,
-            filtroFecha[1] ? filtroFecha[1] : null,
-          ]}
+          value={[filtroFecha[0], filtroFecha[1]]}
           onChange={(val) => setFiltroFecha(val)}
           format="YYYY-MM-DD"
         />
@@ -168,24 +208,56 @@ export default function Asistencias() {
         >
           Nueva Asistencia
         </Button>
+        <Button
+          type="default"
+          icon={<QrcodeOutlined />}
+          onClick={() => setQrModalOpen(true)}
+        >
+          Escanear QR
+        </Button>
       </div>
 
       {/* Resumen */}
-      <div className="grid grid-cols-3 gap-4">
-        <Card>
-          <Statistic title="Total Estudiantes" value={resumen.total} />
-        </Card>
-        <Card>
-          <Statistic title="Asistieron" value={resumen.asistieron} />
-        </Card>
-        <Card>
-          <Statistic
-            title="% Asistencia"
-            value={resumen.porcentaje}
-            suffix="%"
-          />
-        </Card>
-      </div>
+      <Row gutter={16}>
+        <Col span={6}>
+          <Card>
+            <Statistic
+              title="Total Estudiantes"
+              value={resumen.totalEstudiantes}
+            />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card>
+            <Statistic title="Asistieron Hoy" value={resumen.asistieron} />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card>
+            <Statistic
+              title="% Asistencia Hoy"
+              value={resumen.porcentaje}
+              suffix="%"
+            />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card>
+            <Statistic
+              title="Otros Estados"
+              valueRender={() => (
+                <div>
+                  {Object.entries(resumen.estados).map(([estado, cantidad]) => (
+                    <div key={estado}>
+                      {estado}: {cantidad}
+                    </div>
+                  ))}
+                </div>
+              )}
+            />
+          </Card>
+        </Col>
+      </Row>
 
       {/* Tabla */}
       <Table
@@ -210,20 +282,18 @@ export default function Asistencias() {
             rules={[{ required: true, message: "Seleccione un estudiante" }]}
           >
             <Select placeholder="Seleccione un estudiante">
-              {/* Aquí deberías mapear estudiantes desde tu API */}
               {estudiantes.length > 0 &&
-                estudiantes.map((e, index) => {
-                  return (
-                    <Option key={index} value={e.id}>
-                      {e.person.nombre} {e.person.dni}
-                    </Option>
-                  );
-                })}
+                estudiantes.map((e) => (
+                  <Option key={e.id} value={e.id}>
+                    {e.person.nombre} ({e.person.dni})
+                  </Option>
+                ))}
             </Select>
           </Form.Item>
           <Form.Item
             label="Fecha"
             name="fecha"
+            initialValue={dayjs()}
             rules={[{ required: true, message: "Seleccione la fecha" }]}
           >
             <DatePicker style={{ width: "100%" }} />
@@ -248,6 +318,15 @@ export default function Asistencias() {
           </Form.Item>
         </Form>
       </Modal>
+
+      {/* Modal QR */}
+
+      <QrReader
+        asistencias={asistencias}
+        estudiantes={estudiantes}
+        open={qrModalOpen}
+        onClose={() => setQrModalOpen(false)}
+      />
     </div>
   );
 }
