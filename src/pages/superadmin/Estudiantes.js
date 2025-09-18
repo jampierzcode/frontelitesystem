@@ -13,10 +13,16 @@ import {
   Dropdown,
   Menu,
 } from "antd";
-import { DownloadOutlined, MoreOutlined } from "@ant-design/icons";
+import {
+  DownloadOutlined,
+  FileZipOutlined,
+  MoreOutlined,
+} from "@ant-design/icons";
 import apiAcademy from "../../components/auth/apiAcademy";
 
 import QRCode from "qrcode";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
 const { Option } = Select;
 
 const Estudiantes = () => {
@@ -298,6 +304,13 @@ const Estudiantes = () => {
           <Button onClick={handleClearFilters}>Limpiar</Button>
         </Form.Item>
       </Form>
+      <Button
+        type="primary"
+        icon={<FileZipOutlined />}
+        onClick={descargarTodosZip}
+      >
+        Descargar ZIP de todos
+      </Button>
 
       <Table
         dataSource={Array.isArray(filtered) ? filtered : []}

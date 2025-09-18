@@ -7,18 +7,24 @@ export default function QrReader({ open, onClose, estudiantes, asistencias }) {
   const videoRef = useRef(null);
   const scannerRef = useRef(null);
   const [result, setResult] = useState(null);
+  const [processing, setProcessing] = useState(false);
   const [schedules, setSchedules] = useState([]);
+
   const fetchSchedules = async () => {
     try {
       const res = await apiAcademy.get("/schedules");
       setSchedules(res.data.data);
     } catch (error) {}
   };
+
   useEffect(() => {
     fetchSchedules();
   }, []);
 
   const handleResult = async (codigo) => {
+    if (processing) return; // Evita múltiples lecturas
+    setProcessing(true);
+
     setResult(codigo);
 
     // Buscar estudiante por ID
@@ -27,6 +33,7 @@ export default function QrReader({ open, onClose, estudiantes, asistencias }) {
     );
     if (!estudiante) {
       message.error("El QR no corresponde a un estudiante válido.");
+      setProcessing(false);
       return;
     }
 
@@ -45,14 +52,15 @@ export default function QrReader({ open, onClose, estudiantes, asistencias }) {
 
     if (yaTieneAsistencia) {
       message.warning("Este estudiante ya tiene asistencia registrada hoy.");
+      setProcessing(false);
       return;
     }
 
     try {
-      console.log(schedules);
       const scheduleHoy = schedules.find((s) => s.dia === diaCapitalizado);
       if (!scheduleHoy) {
         message.error("No hay horario asignado para hoy.");
+        setProcessing(false);
         return;
       }
 
@@ -63,7 +71,7 @@ export default function QrReader({ open, onClose, estudiantes, asistencias }) {
       const nuevaAsistencia = {
         estudianteId: estudiante.id,
         fecha: fechaHoy,
-        horantrada: horaActual,
+        horaEntrada: horaActual,
         estado: esTarde ? "Tarde" : "Presente",
       };
 
@@ -72,10 +80,14 @@ export default function QrReader({ open, onClose, estudiantes, asistencias }) {
       message.success(
         `Asistencia registrada: ${estudiante.nombre} - ${nuevaAsistencia.estado}`
       );
+
       onClose();
     } catch (err) {
       console.error(err);
       message.error("Error registrando la asistencia.");
+    } finally {
+      // 🔑 Reactivar escaneo después de un pequeño delay
+      setTimeout(() => setProcessing(false), 1500);
     }
   };
 
@@ -104,7 +116,13 @@ export default function QrReader({ open, onClose, estudiantes, asistencias }) {
         }
       }}
     >
-      <video ref={videoRef} className="w-full h-64 bg-black rounded-md" />
+      {/* ✅ La cámara siempre se muestra */}
+      <video
+        ref={videoRef}
+        className="w-full h-64 bg-black rounded-md"
+        autoPlay
+        muted
+      />
       {result && (
         <p className="mt-3 p-2 bg-green-100 text-green-800 rounded">
           Último QR detectado: {result}
