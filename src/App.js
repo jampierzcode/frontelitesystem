@@ -15,13 +15,6 @@ import Usuarios from "./pages/superadmin/Usuarios";
 import LayoutSuperadmin from "./components/rolSuperAdmin/Layout";
 import NotFoundPage from "./pages/NotFoundPage";
 import Identy from "./pages/Identy";
-import PedidoManager from "./pages/superadmin/PedidoManager";
-import CampaignDetails from "./pages/superadmin/CampaignDetail";
-import BarcodeScanner from "./components/rolSuperAdmin/BarCodeScanner";
-import Generador from "./pages/superadmin/Generador";
-import SqlGenerator from "./pages/superadmin/SqlGenerator";
-import ExcelUpload from "./pages/superadmin/ExcelUpload";
-import SedesManager from "./pages/superadmin/SedesManager";
 import InscritosManager from "./pages/superadmin/InscritosManager";
 import Personas from "./pages/superadmin/Personas";
 import Ciclos from "./pages/superadmin/Ciclos";
@@ -161,20 +154,6 @@ function App() {
               <PrivateRoute roles={["superadmin"]}>
                 <LayoutSuperadmin>
                   <Schedules />
-                </LayoutSuperadmin>
-              </PrivateRoute>
-            }
-          />
-          <Route path="/scanner" element={<BarcodeScanner />} />
-          <Route path="/generator-codigos/:id" element={<Generador />} />
-          <Route path="/generator-sqls" element={<SqlGenerator />} />
-          <Route path="/generator-update" element={<ExcelUpload />} />
-          <Route
-            path="/campaigns/:id"
-            element={
-              <PrivateRoute roles={["superadmin"]}>
-                <LayoutSuperadmin>
-                  <CampaignDetails />
                 </LayoutSuperadmin>
               </PrivateRoute>
             }

@@ -3,7 +3,13 @@ import { Modal, message } from "antd";
 import QrScanner from "qr-scanner";
 import apiAcademy from "./auth/apiAcademy";
 
-export default function QrReader({ open, onClose, estudiantes, asistencias }) {
+export default function QrReader({
+  open,
+  onClose,
+  estudiantes,
+  asistencias,
+  fetchAsistencias,
+}) {
   const videoRef = useRef(null);
   const scannerRef = useRef(null);
   const [result, setResult] = useState(null);
@@ -24,6 +30,7 @@ export default function QrReader({ open, onClose, estudiantes, asistencias }) {
   const handleResult = async (codigo) => {
     if (processing) return; // Evita múltiples lecturas
     setProcessing(true);
+    console.log("que esta pasando");
 
     setResult(codigo);
 
@@ -31,6 +38,7 @@ export default function QrReader({ open, onClose, estudiantes, asistencias }) {
     const estudiante = estudiantes.find(
       (e) => e.id.toString() === codigo.toString()
     );
+    console.log(estudiante);
     if (!estudiante) {
       message.error("El QR no corresponde a un estudiante válido.");
       setProcessing(false);
@@ -80,6 +88,8 @@ export default function QrReader({ open, onClose, estudiantes, asistencias }) {
       message.success(
         `Asistencia registrada: ${estudiante.nombre} - ${nuevaAsistencia.estado}`
       );
+
+      await fetchAsistencias();
 
       onClose();
     } catch (err) {

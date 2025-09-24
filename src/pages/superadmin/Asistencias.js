@@ -47,6 +47,7 @@ export default function Asistencias() {
 
   useEffect(() => {
     fetchAsistencias();
+    // eslint-disable-next-line
   }, [filtroFecha, filtroEstado]);
 
   const fetchEstudiantes = async () => {
@@ -323,6 +324,7 @@ export default function Asistencias() {
 
       <QrReader
         asistencias={asistencias}
+        fetchAsistencias={fetchAsistencias}
         estudiantes={estudiantes}
         open={qrModalOpen}
         onClose={() => setQrModalOpen(false)}

@@ -1,4 +1,5 @@
-// src/pages/Estudiantes.js
+import { FileExcelOutlined } from "@ant-design/icons";
+import * as XLSX from "xlsx";
 import React, { useEffect, useState } from "react";
 import {
   Table,
@@ -6,12 +7,12 @@ import {
   Input,
   Form,
   Modal,
-  Select,
   message,
   Popconfirm,
   notification,
   Dropdown,
   Menu,
+  Upload,
 } from "antd";
 import {
   DownloadOutlined,
@@ -23,7 +24,6 @@ import apiAcademy from "../../components/auth/apiAcademy";
 import QRCode from "qrcode";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-const { Option } = Select;
 
 const Estudiantes = () => {
   const [estudiantes, setEstudiantes] = useState([]);
@@ -39,6 +39,7 @@ const Estudiantes = () => {
 
   useEffect(() => {
     fetchEstudiantes();
+    // eslint-disable-next-line
   }, []);
 
   const fetchEstudiantes = async () => {
@@ -196,6 +197,94 @@ const Estudiantes = () => {
     return <CiclosResumen estudianteId={record.id} />;
   };
 
+  const handleUploadEstudiantes = (file) => {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: "array" });
+        const sheet = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheet];
+        const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+        // saltar cabecera -> empieza fila 2
+        const registros = rows.slice(2).map((row) => {
+          return {
+            dni: row[2] || "", // columna C
+            nombreCompleto: row[3] || "", // columna D
+            telMama: row[4] || "", // columna E
+            telPapa: row[5] || "", // columna F
+            telefonoAlumno: row[6] || "", // columna G
+            email: row[7] || "", // columna H
+          };
+        });
+
+        for (const r of registros) {
+          if (!r.dni || !r.nombreCompleto) continue;
+
+          // procesar nombre y apellido según reglas
+          const partes = r.nombreCompleto.trim().split(/\s+/);
+          let nombre = "";
+          let apellido = "";
+
+          switch (partes.length) {
+            case 1:
+              nombre = partes[0];
+              break;
+            case 2:
+              [nombre, apellido] = partes;
+              break;
+            case 3:
+              nombre = partes[0];
+              apellido = partes.slice(1).join(" ");
+              break;
+            case 4:
+              nombre = partes.slice(0, 2).join(" ");
+              apellido = partes.slice(2).join(" ");
+              break;
+            case 5:
+              nombre = partes.slice(0, 3).join(" ");
+              apellido = partes.slice(3).join(" ");
+              break;
+            default:
+              nombre = partes[0];
+              apellido = partes.slice(1).join(" ");
+          }
+
+          // escoger número apoderado (mamá o papá)
+          const numeroApoderado = r.telMama || r.telPapa || "";
+
+          // 1) Crear Person
+          const personRes = await apiAcademy.post("/persons", {
+            dni: r.dni,
+            nombre,
+            apellido,
+            whatsapp: r.telefonoAlumno || "",
+            email: r.email || "",
+            tipo: "estudiante",
+          });
+
+          const personId = personRes.data.data.id;
+
+          // 2) Crear Estudiante
+          await apiAcademy.post("/estudiantes", {
+            personId,
+            nombreApoderado: "", // no viene en Excel
+            numeroApoderado,
+          });
+        }
+
+        message.success("Estudiantes subidos correctamente");
+        fetchEstudiantes();
+      } catch (err) {
+        console.error(err);
+        message.error("Error al procesar el archivo");
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    return false;
+  };
+
   // table columns
   const columns = [
     {
@@ -204,10 +293,12 @@ const Estudiantes = () => {
       render: (_, record) => (
         <div>
           <div className="font-semibold">
-            {record.person.nombre} {record.person.apellido}
+            {record?.person?.nombre} {record?.person?.apellido}
           </div>
-          <div className="text-sm text-gray-500">{record.person.email}</div>
-          <div className="text-sm text-gray-500">DNI: {record.person.dni}</div>
+          <div className="text-sm text-gray-500">{record?.person?.email}</div>
+          <div className="text-sm text-gray-500">
+            DNI: {record?.person?.dni}
+          </div>
         </div>
       ),
     },
@@ -311,6 +402,19 @@ const Estudiantes = () => {
       >
         Descargar ZIP de todos
       </Button>
+      <Upload
+        beforeUpload={handleUploadEstudiantes}
+        showUploadList={false}
+        accept=".xlsx,.xls"
+      >
+        <Button
+          type="default"
+          icon={<FileExcelOutlined />}
+          style={{ marginLeft: 10 }}
+        >
+          Subir Estudiantes (Excel)
+        </Button>
+      </Upload>
 
       <Table
         dataSource={Array.isArray(filtered) ? filtered : []}

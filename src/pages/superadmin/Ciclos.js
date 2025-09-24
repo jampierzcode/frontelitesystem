@@ -10,7 +10,6 @@ import {
   message,
   Popconfirm,
 } from "antd";
-import axios from "axios";
 import dayjs from "dayjs";
 import apiAcademy from "../../components/auth/apiAcademy";
 

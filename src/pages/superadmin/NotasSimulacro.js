@@ -1,110 +1,139 @@
 import React, { useEffect, useState } from "react";
-import { Table, Button, InputNumber, Select, message } from "antd";
-import axios from "axios";
+import { Table, Button, Upload, message, Select, Card } from "antd";
+import { UploadOutlined } from "@ant-design/icons";
+import * as XLSX from "xlsx";
 import apiAcademy from "../../components/auth/apiAcademy";
 
-const { Option } = Select;
-
-export default function NotasSimulacro() {
-  const [simulacros, setSimulacros] = useState([]);
+const SubirNotas = () => {
+  const [examenes, setExamenes] = useState([]);
+  const [examenSeleccionado, setExamenSeleccionado] = useState(null);
   const [estudiantes, setEstudiantes] = useState([]);
-  const [notas, setNotas] = useState({});
-  const [simulacroId, setSimulacroId] = useState(null);
+  const [notasExcel, setNotasExcel] = useState([]);
 
-  const fetchSimulacros = async () => {
-    try {
-      const { data } = await apiAcademy.get(
-        "/examenesSimulacro?estado=iniciado"
-      );
-      setSimulacros(data);
-    } catch {
-      message.error("Error cargando simulacros");
-    }
-  };
-
-  const fetchEstudiantes = async (id) => {
-    try {
-      //   const { data } = await apiAcademy.get(`/estudiantes?simulacroId=${id}`);
-      const { data } = await apiAcademy.get(`/estudiantes`);
-      setEstudiantes(data);
-      const inicial = {};
-      data.forEach((e) => (inicial[e.id] = null));
-      setNotas(inicial);
-    } catch {
-      message.error("Error cargando estudiantes");
-    }
-  };
-
-  const handleGuardar = async () => {
-    try {
-      const payload = Object.entries(notas).map(([estudianteId, nota]) => ({
-        examen_id: simulacroId,
-        estudiante_id: parseInt(estudianteId),
-        nota,
-      }));
-      await apiAcademy.post("/notasSimulacro", payload);
-      message.success("Notas guardadas");
-    } catch {
-      message.error("Error guardando notas");
-    }
-  };
-
+  // 1. Traer examenes iniciados
   useEffect(() => {
-    fetchSimulacros();
+    const fetchExamenes = async () => {
+      try {
+        const { data } = await apiAcademy.get("/examenesSimulacro", {
+          params: { estado: "iniciado" },
+        });
+        setExamenes(data);
+      } catch (err) {
+        message.error("Error cargando examenes");
+      }
+    };
+    fetchExamenes();
   }, []);
 
-  return (
-    <div>
-      <h2>Subir Notas de Simulacro</h2>
+  // 2. Traer estudiantes
+  useEffect(() => {
+    const fetchEstudiantes = async () => {
+      try {
+        const { data } = await apiAcademy.get("/estudiantes");
+        setEstudiantes(data.data);
+      } catch (err) {
+        message.error("Error cargando estudiantes");
+      }
+    };
+    fetchEstudiantes();
+  }, []);
 
+  // 3. Leer Excel
+  const handleUpload = (file) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: "array" });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+      // Empieza desde fila 2 → Alumno ID en col 1, Puntaje en col 5
+      const parsedNotas = rows
+        .slice(2)
+        .map((row) => {
+          return {
+            dni: row[1], // columna Alumno ID
+            puntaje: row[5], // columna Puntaje
+          };
+        })
+        .filter((n) => n.dni && n.puntaje);
+
+      setNotasExcel(parsedNotas);
+      message.success("Archivo leído correctamente");
+    };
+    reader.readAsArrayBuffer(file);
+    return false; // evita auto subida
+  };
+
+  // 4. Subir notas a API
+  const subirNotas = async () => {
+    if (!examenSeleccionado) {
+      message.warning("Selecciona un examen primero");
+      return;
+    }
+    try {
+      for (const nota of notasExcel) {
+        const estudiante = estudiantes.find(
+          (e) => e.person?.dni === String(nota.dni)
+        );
+        if (!estudiante) {
+          message.warning(`No se encontró estudiante con DNI ${nota.dni}`);
+          continue;
+        }
+
+        await apiAcademy.post("/notasSimulacro", {
+          examen_id: examenSeleccionado,
+          estudiante_id: estudiante.id,
+          nota: Number(nota.puntaje),
+        });
+      }
+      message.success("Notas subidas correctamente");
+    } catch (err) {
+      console.error(err);
+      message.error("Error subiendo notas");
+    }
+  };
+
+  return (
+    <Card title="Subir Notas de Exámenes" style={{ margin: 20 }}>
       <Select
-        placeholder="Selecciona simulacro iniciado"
-        style={{ width: 300, marginBottom: 20 }}
-        onChange={(value) => {
-          setSimulacroId(value);
-          fetchEstudiantes(value);
-        }}
+        style={{ width: 300, marginBottom: 16 }}
+        placeholder="Selecciona un examen iniciado"
+        onChange={(val) => setExamenSeleccionado(val)}
       >
-        {simulacros.map((s) => (
-          <Option key={s.id} value={s.id}>
-            {`Simulacro #${s.id} - ${s.fecha}`}
-          </Option>
+        {examenes.map((ex) => (
+          <Select.Option key={ex.id} value={ex.id}>
+            {`Examen ${ex.id} - ${ex.fecha} (${ex.canal})`}
+          </Select.Option>
         ))}
       </Select>
 
-      {estudiantes.length > 0 && (
-        <>
-          <Table
-            rowKey="id"
-            dataSource={estudiantes}
-            columns={[
-              { title: "ID", dataIndex: "id" },
-              { title: "Nombre", dataIndex: "nombre" },
-              {
-                title: "Nota",
-                render: (_, record) => (
-                  <InputNumber
-                    min={0}
-                    max={20}
-                    value={notas[record.id]}
-                    onChange={(value) =>
-                      setNotas({ ...notas, [record.id]: value })
-                    }
-                  />
-                ),
-              },
-            ]}
-            pagination={false}
-          />
-          <Button
-            type="primary"
-            style={{ marginTop: 20 }}
-            onClick={handleGuardar}
-          >
-            Guardar Notas
-          </Button>
-        </>
-      )}
-    </div>
+      <Upload beforeUpload={handleUpload} showUploadList={false}>
+        <Button icon={<UploadOutlined />}>Subir Excel</Button>
+      </Upload>
+
+      <Table
+        rowKey="dni"
+        style={{ marginTop: 20 }}
+        columns={[
+          { title: "DNI", dataIndex: "dni" },
+          { title: "Puntaje", dataIndex: "puntaje" },
+        ]}
+        dataSource={notasExcel}
+        pagination={false}
+      />
+
+      <Button
+        type="primary"
+        onClick={subirNotas}
+        disabled={!notasExcel.length}
+        style={{ marginTop: 20 }}
+      >
+        Guardar Notas en Examen
+      </Button>
+    </Card>
   );
-}
+};
+
+export default SubirNotas;

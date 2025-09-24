@@ -10,7 +10,6 @@ import {
   FaUserFriends,
   FaUserGraduate,
   FaChalkboardTeacher,
-  FaClipboardList,
 } from "react-icons/fa";
 import { MdOutlineClass, MdOutlineAssignment } from "react-icons/md";
 import { HiOutlineAcademicCap } from "react-icons/hi2";
@@ -130,7 +129,7 @@ const Sidebar = ({ open, setOpen }) => {
   return (
     <div className="position">
       <div
-        className={`z-20 bg-primary shadow-lg text-light-font p-5 pt-8 ${
+        className={`min-h-[100vh] z-20 bg-primary shadow-lg text-light-font p-5 pt-8 ${
           open
             ? "translate-x-0 md:translate-x-0 w-60 md:w-60"
             : "-translate-x-20 w-20 md:translate-x-0 md:block md:w-20"

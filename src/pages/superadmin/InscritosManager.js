@@ -9,7 +9,6 @@ import {
   message,
   Popconfirm,
 } from "antd";
-import axios from "axios";
 import apiAcademy from "../../components/auth/apiAcademy";
 
 const { Option } = Select;

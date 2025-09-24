@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 import {
   Table,
   Button,
@@ -11,7 +13,6 @@ import {
   Popconfirm,
   TimePicker,
 } from "antd";
-import axios from "axios";
 import dayjs from "dayjs";
 import apiAcademy from "../../components/auth/apiAcademy";
 
@@ -24,8 +25,38 @@ export default function ExamenesSimulacro() {
   const [editing, setEditing] = useState(null);
   const [form] = Form.useForm();
 
+  const [notasModalOpen, setNotasModalOpen] = useState(false);
+  const [notasData, setNotasData] = useState([]);
+  const [examenSeleccionado, setExamenSeleccionado] = useState(null);
+  const openNotas = async (record) => {
+    try {
+      const { data } = await apiAcademy.get(`/examenesSimulacro/${record.id}`);
+      setNotasData(data.notas);
+      setExamenSeleccionado(record);
+      setNotasModalOpen(true);
+    } catch (err) {
+      message.error("Error cargando notas");
+    }
+  };
+
   const canales = ["canal 1", "canal 2", "canal 3", "canal 4"];
   const estados = ["creado", "iniciado", "finalizado", "reprogramado"];
+
+  const exportNotas = () => {
+    const data = notasData.map((n) => ({
+      ID: n.id,
+      Nombre: `${n.estudiante?.person?.nombres} ${n.estudiante?.person?.apellidos}`,
+      Nota: n.nota,
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Notas");
+
+    const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
+    saveAs(blob, `notas_examen_${examenSeleccionado?.id}.xlsx`);
+  };
 
   const fetchSimulacros = async () => {
     setLoading(true);
@@ -44,10 +75,10 @@ export default function ExamenesSimulacro() {
       const payload = {
         ...values,
         fecha: values.fecha.format("YYYY-MM-DD"),
-        hora_inicio: values.hora_inicio
-          ? values.hora_inicio.format("HH:mm:ss")
+        horaInicio: values.horaInicio
+          ? values.horaInicio.format("HH:mm:ss")
           : null,
-        hora_fin: values.hora_fin ? values.hora_fin.format("HH:mm:ss") : null,
+        horaFin: values.horaFin ? values.horaFin.format("HH:mm:ss") : null,
         fecha_reprogramacion: values.fecha_reprogramacion
           ? values.fecha_reprogramacion.format("YYYY-MM-DD")
           : null,
@@ -65,6 +96,7 @@ export default function ExamenesSimulacro() {
       setEditing(null);
       fetchSimulacros();
     } catch (error) {
+      console.log(error);
       message.error("Error guardando simulacro");
     }
   };
@@ -99,6 +131,19 @@ export default function ExamenesSimulacro() {
     fetchSimulacros();
   }, []);
 
+  const updateNota = async (notaId, nuevaNota) => {
+    try {
+      await apiAcademy.put(`/notasSimulacro/${notaId}`, { nota: nuevaNota });
+      message.success("Nota actualizada");
+      // refrescar la tabla
+      setNotasData((prev) =>
+        prev.map((n) => (n.id === notaId ? { ...n, nota: nuevaNota } : n))
+      );
+    } catch (err) {
+      message.error("Error actualizando nota");
+    }
+  };
+
   return (
     <div>
       <Button type="primary" onClick={() => setIsModalOpen(true)}>
@@ -110,13 +155,16 @@ export default function ExamenesSimulacro() {
           { title: "ID", dataIndex: "id" },
           { title: "Estado", dataIndex: "estado" },
           { title: "Fecha", dataIndex: "fecha" },
-          { title: "Hora Inicio", dataIndex: "hora_inicio" },
-          { title: "Hora Fin", dataIndex: "hora_fin" },
+          { title: "Hora Inicio", dataIndex: "horaInicio" },
+          { title: "Hora Fin", dataIndex: "horaFin" },
           { title: "Canal", dataIndex: "canal" },
           {
             title: "Acciones",
             render: (_, record) => (
               <>
+                <Button type="link" onClick={() => openNotas(record)}>
+                  Ver Notas
+                </Button>
                 <Button type="link" onClick={() => openEdit(record)}>
                   Editar
                 </Button>
@@ -136,6 +184,45 @@ export default function ExamenesSimulacro() {
         loading={loading}
         style={{ marginTop: 16 }}
       />
+      <Modal
+        title={`Notas del examen #${examenSeleccionado?.id}`}
+        open={notasModalOpen}
+        onCancel={() => setNotasModalOpen(false)}
+        footer={null}
+        width={800}
+      >
+        <Button
+          type="primary"
+          onClick={exportNotas}
+          style={{ marginBottom: 16 }}
+        >
+          Exportar a Excel
+        </Button>
+        <Table
+          rowKey="id"
+          columns={[
+            { title: "ID", dataIndex: "id" },
+            {
+              title: "Nombre",
+              render: (_, r) =>
+                `${r.estudiante?.person?.nombre} ${r.estudiante?.person?.apellido}`,
+            },
+            {
+              title: "Nota",
+              dataIndex: "nota",
+              render: (nota, record) => (
+                <Input
+                  defaultValue={nota}
+                  onBlur={(e) => updateNota(record.id, e.target.value)}
+                  style={{ width: 80 }}
+                />
+              ),
+            },
+          ]}
+          dataSource={notasData}
+          pagination={false}
+        />
+      </Modal>
 
       <Modal
         title={editing ? "Editar Simulacro" : "Nuevo Simulacro"}
@@ -160,11 +247,11 @@ export default function ExamenesSimulacro() {
             <DatePicker format="YYYY-MM-DD" />
           </Form.Item>
 
-          <Form.Item name="hora_inicio" label="Hora Inicio">
+          <Form.Item name="horaInicio" label="Hora Inicio">
             <TimePicker format="HH:mm" />
           </Form.Item>
 
-          <Form.Item name="hora_fin" label="Hora Fin">
+          <Form.Item name="horaFin" label="Hora Fin">
             <TimePicker format="HH:mm" />
           </Form.Item>
 
