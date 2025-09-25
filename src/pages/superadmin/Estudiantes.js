@@ -13,6 +13,7 @@ import {
   Dropdown,
   Menu,
   Upload,
+  Select,
 } from "antd";
 import {
   DownloadOutlined,
@@ -25,12 +26,18 @@ import QRCode from "qrcode";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 
+const { Option } = Select;
+
 const Estudiantes = () => {
   const [estudiantes, setEstudiantes] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const [filterForm] = Form.useForm();
+
+  // crear nuevo estudiante
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [createForm] = Form.useForm();
 
   // editar estudiante/persona
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -149,6 +156,7 @@ const Estudiantes = () => {
       email: record.person.email,
       nombre_apoderado: record.nombreApoderado || "",
       numero_apoderado: record.numeroApoderado || "",
+      sede_id: record.person.sedeId || null, // 👈 sede del estudiante
     });
     setIsEditModalOpen(true);
   };
@@ -164,6 +172,7 @@ const Estudiantes = () => {
         dni: values.dni,
         whatsapp: values.whatsapp,
         email: values.email,
+        sedeId: values.sede_id, // 👈 sede seleccionada
       });
 
       // 2) actualizar o crear estudiante (si no tiene)
@@ -196,6 +205,21 @@ const Estudiantes = () => {
     // NOTA: sacamos matriculas desde API cada vez; para optimizar, puedes cachearlas
     return <CiclosResumen estudianteId={record.id} />;
   };
+  const [sedes, setSedes] = useState([]);
+  const [sedeSeleccionada, setSedeSeleccionada] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
+
+  useEffect(() => {
+    const loadSedes = async () => {
+      try {
+        const res = await apiAcademy.get("/sedes");
+        setSedes(res.data.data || []);
+      } catch (err) {
+        message.error("Error al cargar sedes");
+      }
+    };
+    loadSedes();
+  }, []);
 
   const handleUploadEstudiantes = (file) => {
     const reader = new FileReader();
@@ -262,6 +286,7 @@ const Estudiantes = () => {
             whatsapp: r.telefonoAlumno || "",
             email: r.email || "",
             tipo: "estudiante",
+            sedeId: sedeSeleccionada, // 👈 agregado aquí
           });
 
           const personId = personRes.data.data.id;
@@ -397,23 +422,65 @@ const Estudiantes = () => {
       </Form>
       <Button
         type="primary"
+        style={{ marginRight: 10 }}
+        onClick={() => setIsCreateModalOpen(true)}
+      >
+        Crear Estudiante
+      </Button>
+      <Button
+        type="primary"
         icon={<FileZipOutlined />}
         onClick={descargarTodosZip}
       >
         Descargar ZIP de todos
       </Button>
+      <Button
+        type="default"
+        icon={<FileExcelOutlined />}
+        style={{ marginLeft: 10 }}
+        onClick={() => setModalOpen(true)}
+      >
+        Subir Estudiantes (Excel)
+      </Button>
+      <Modal
+        title="Seleccionar Sede"
+        open={modalOpen}
+        onCancel={() => setModalOpen(false)}
+        onOk={() => {
+          if (!sedeSeleccionada) {
+            message.error("Selecciona una sede");
+            return;
+          }
+          setModalOpen(false);
+          // Luego de cerrar modal, simular click en upload
+          document.getElementById("uploadEstudiantesInput").click();
+        }}
+        okText="Confirmar"
+        cancelText="Cancelar"
+      >
+        <Select
+          placeholder="Selecciona una sede"
+          style={{ width: "100%" }}
+          value={sedeSeleccionada}
+          onChange={(val) => setSedeSeleccionada(val)}
+        >
+          {sedes.map((s) => (
+            <Option key={s.id} value={s.id}>
+              {s.nameReferential}
+            </Option>
+          ))}
+        </Select>
+      </Modal>
+
+      {/* Upload oculto, se activa tras confirmar modal */}
       <Upload
+        id="uploadEstudiantesInput"
         beforeUpload={handleUploadEstudiantes}
         showUploadList={false}
         accept=".xlsx,.xls"
+        style={{ display: "none" }}
       >
-        <Button
-          type="default"
-          icon={<FileExcelOutlined />}
-          style={{ marginLeft: 10 }}
-        >
-          Subir Estudiantes (Excel)
-        </Button>
+        <span />
       </Upload>
 
       <Table
@@ -449,6 +516,104 @@ const Estudiantes = () => {
           <Form.Item label="Email" name="email">
             <Input />
           </Form.Item>
+
+          {/* 🔹 Selección de sede */}
+          <Form.Item
+            label="Sede"
+            name="sede_id"
+            rules={[{ required: true, message: "Selecciona una sede" }]}
+          >
+            <Select placeholder="Selecciona una sede">
+              {sedes.map((s) => (
+                <Option key={s.id} value={s.id}>
+                  {s.nameReferential}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+          <label className="text-md font-medium" htmlFor="Datos Extra">
+            Datos Extra
+          </label>
+          <Form.Item label="Nombre Apoderado" name="nombre_apoderado">
+            <Input />
+          </Form.Item>
+          <Form.Item label="Número Apoderado" name="numero_apoderado">
+            <Input />
+          </Form.Item>
+        </Form>
+      </Modal>
+      <Modal
+        title="Crear Estudiante"
+        open={isCreateModalOpen}
+        onCancel={() => setIsCreateModalOpen(false)}
+        onOk={async () => {
+          try {
+            const values = await createForm.validateFields();
+
+            // 1) Crear person
+            const personRes = await apiAcademy.post("/persons", {
+              nombre: values.nombre,
+              apellido: values.apellido,
+              dni: values.dni,
+              whatsapp: values.whatsapp,
+              email: values.email,
+              tipo: "estudiante",
+              sedeId: values.sede_id, // 👈 sede seleccionada
+            });
+
+            const personId = personRes.data.data.id;
+
+            // 2) Crear estudiante
+            await apiAcademy.post("/estudiantes", {
+              personId,
+              nombreApoderado: values.nombre_apoderado,
+              numeroApoderado: values.numero_apoderado,
+            });
+
+            notification.success({
+              message: "Estudiante creado correctamente",
+            });
+            setIsCreateModalOpen(false);
+            createForm.resetFields();
+            fetchEstudiantes();
+          } catch (err) {
+            notification.error({ message: "Error al crear estudiante" });
+          }
+        }}
+        okButtonProps={{ className: "bg-primary text-white" }}
+      >
+        <Form layout="vertical" form={createForm}>
+          <Form.Item label="Nombre" name="nombre" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item label="Apellido" name="apellido">
+            <Input />
+          </Form.Item>
+          <Form.Item label="DNI" name="dni" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item label="WhatsApp" name="whatsapp">
+            <Input />
+          </Form.Item>
+          <Form.Item label="Email" name="email">
+            <Input />
+          </Form.Item>
+
+          {/* 🔹 Selección de sede */}
+          <Form.Item
+            label="Sede"
+            name="sede_id"
+            rules={[{ required: true, message: "Selecciona una sede" }]}
+          >
+            <Select placeholder="Selecciona una sede">
+              {sedes.map((s) => (
+                <Option key={s.id} value={s.id}>
+                  {s.nameReferential}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
           <label className="text-md font-medium" htmlFor="Datos Extra">
             Datos Extra
           </label>

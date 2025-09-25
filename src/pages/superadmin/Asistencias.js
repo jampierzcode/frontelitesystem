@@ -15,7 +15,7 @@ import {
 } from "antd";
 import dayjs from "dayjs";
 import apiAcademy from "../../components/auth/apiAcademy";
-import { PlusOutlined, QrcodeOutlined } from "@ant-design/icons";
+import { EditOutlined, PlusOutlined, QrcodeOutlined } from "@ant-design/icons";
 import QrReader from "../../components/QrReader";
 
 const { Option } = Select;
@@ -40,6 +40,10 @@ export default function Asistencias() {
   });
 
   const [estudiantes, setEstudiantes] = useState([]);
+  // --- NUEVO: estado para editar ---
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editForm] = Form.useForm();
+  const [selectedAsistencia, setSelectedAsistencia] = useState(null);
 
   useEffect(() => {
     fetchEstudiantes();
@@ -129,31 +133,43 @@ export default function Asistencias() {
       message.error("Error al guardar asistencia");
     }
   };
-
-  // --- LECTURA DE QR ---
-  const [data, setData] = useState("No result");
-  const handleScan = async (data) => {
-    if (data) {
-      try {
-        await apiAcademy.post("/asistencias", {
-          estudianteId: data, // el QR contiene el id del estudiante
-          fecha: dayjs().format("YYYY-MM-DD"),
-          horaEntrada: dayjs().format("YYYY-MM-DD HH:mm:ss"),
-          estado: "presente",
-        });
-        message.success("Asistencia registrada vía QR");
-        setQrModalOpen(false);
-        fetchAsistencias();
-      } catch (error) {
-        console.error(error);
-        message.error("Error registrando asistencia con QR");
-      }
-    }
+  // --- EDITAR ASISTENCIA ---
+  const openEditModal = (record) => {
+    setSelectedAsistencia(record);
+    editForm.setFieldsValue({
+      estudianteId: record.estudianteId,
+      fecha: dayjs(record.fecha),
+      horaEntrada: record.horaEntrada ? dayjs(record.horaEntrada) : null,
+      horaSalida: record.horaSalida ? dayjs(record.horaSalida) : null,
+      estado: record.estado,
+    });
+    setEditModalOpen(true);
   };
 
-  const handleError = (err) => {
-    console.error(err);
-    message.error("Error con la cámara");
+  const handleEdit = async () => {
+    try {
+      const values = await editForm.validateFields();
+      const payload = {
+        estudianteId: values.estudianteId,
+        fecha: values.fecha.format("YYYY-MM-DD"),
+        horaEntrada: values.horaEntrada
+          ? values.horaEntrada.format("YYYY-MM-DD HH:mm:ss")
+          : null,
+        horaSalida: values.horaSalida
+          ? values.horaSalida.format("YYYY-MM-DD HH:mm:ss")
+          : null,
+        estado: values.estado,
+      };
+
+      await apiAcademy.put(`/asistencias/${selectedAsistencia.id}`, payload);
+      message.success("Asistencia actualizada");
+      setEditModalOpen(false);
+      fetchAsistencias();
+      editForm.resetFields();
+    } catch (error) {
+      console.error(error);
+      message.error("Error al actualizar asistencia");
+    }
   };
 
   const columns = [
@@ -178,6 +194,18 @@ export default function Asistencias() {
     {
       title: "Estado",
       dataIndex: "estado",
+    },
+    {
+      title: "Acciones",
+      render: (_, record) => (
+        <Button
+          type="link"
+          icon={<EditOutlined />}
+          onClick={() => openEditModal(record)}
+        >
+          Editar
+        </Button>
+      ),
     },
   ];
 
@@ -295,6 +323,55 @@ export default function Asistencias() {
             label="Fecha"
             name="fecha"
             initialValue={dayjs()}
+            rules={[{ required: true, message: "Seleccione la fecha" }]}
+          >
+            <DatePicker style={{ width: "100%" }} />
+          </Form.Item>
+          <Form.Item label="Hora Entrada" name="horaEntrada">
+            <TimePicker style={{ width: "100%" }} />
+          </Form.Item>
+          <Form.Item label="Hora Salida" name="horaSalida">
+            <TimePicker style={{ width: "100%" }} />
+          </Form.Item>
+          <Form.Item
+            label="Estado"
+            name="estado"
+            rules={[{ required: true, message: "Seleccione el estado" }]}
+          >
+            <Select>
+              <Option value="presente">Presente</Option>
+              <Option value="tardanza">Tardanza</Option>
+              <Option value="falta">Falta</Option>
+              <Option value="justificada">Justificada</Option>
+            </Select>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Modal Editar */}
+      <Modal
+        open={editModalOpen}
+        title="Editar Asistencia"
+        onCancel={() => setEditModalOpen(false)}
+        onOk={handleEdit}
+      >
+        <Form layout="vertical" form={editForm}>
+          <Form.Item
+            label="Estudiante"
+            name="estudianteId"
+            rules={[{ required: true, message: "Seleccione un estudiante" }]}
+          >
+            <Select placeholder="Seleccione un estudiante">
+              {estudiantes.map((e) => (
+                <Option key={e.id} value={e.id}>
+                  {e.person.nombre} ({e.person.dni})
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+          <Form.Item
+            label="Fecha"
+            name="fecha"
             rules={[{ required: true, message: "Seleccione la fecha" }]}
           >
             <DatePicker style={{ width: "100%" }} />
