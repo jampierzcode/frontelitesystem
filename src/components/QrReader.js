@@ -167,17 +167,6 @@ export default function QrReader({
   const startScanner = async () => {
     if (!videoRef.current) return;
 
-    // HTTPS/localhost
-    const isLocalhost =
-      typeof window !== "undefined" &&
-      (location.hostname === "localhost" || location.hostname === "127.0.0.1");
-    const isSecure = location.protocol === "https:" || isLocalhost;
-    if (!isSecure) {
-      message.error("La cámara requiere HTTPS o localhost.");
-      console.warn("Contexto no seguro. Usa https o localhost.");
-      return;
-    }
-
     // ¿Hay cámara?
     const hasCam = await QrScanner.hasCamera();
     if (!hasCam) {
@@ -290,6 +279,16 @@ export default function QrReader({
     const diaCapitalizado = dayNameCapitalES(now);
 
     // Si ya tiene asistencia HOY (local), no repetir
+    asistencias.forEach((a) => {
+      console.log("Comparando:", a.estudianteId, "vs", estudiante.id);
+      console.log("Fecha:", a.fecha, "vs", fechaHoy);
+      console.log(
+        "Resultado:",
+        String(a.estudianteId) === String(estudiante.id) &&
+          String(a.fecha) === String(fechaHoy)
+      );
+    });
+
     const yaTieneAsistencia = asistencias.some(
       (a) =>
         String(a.estudianteId) === String(estudiante.id) &&
