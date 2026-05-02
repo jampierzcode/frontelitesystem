@@ -25,6 +25,7 @@ import apiAcademy from "../../components/auth/apiAcademy";
 import QRCode from "qrcode";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
+import ApoderadosManager from "../../components/rolSuperAdmin/ApoderadosManager";
 
 const { Option } = Select;
 
@@ -32,6 +33,8 @@ const Estudiantes = () => {
   const [estudiantes, setEstudiantes] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [loading, setLoading] = useState(false);
+  // Map<estudianteId, { total, activos }> — precalculado del fetch único
+  const [resumenMap, setResumenMap] = useState(new Map());
 
   const [filterForm] = Form.useForm();
 
@@ -44,8 +47,13 @@ const Estudiantes = () => {
   const [editForm] = Form.useForm();
   const [currentEstudiante, setCurrentEstudiante] = useState(null);
 
+  // Listas de apoderados editadas localmente (controladas por ApoderadosManager)
+  const [apoderadosCreate, setApoderadosCreate] = useState([]);
+  const [apoderadosEdit, setApoderadosEdit] = useState([]);
+
   useEffect(() => {
     fetchEstudiantes();
+    fetchResumenMatriculas();
     // eslint-disable-next-line
   }, []);
 
@@ -53,7 +61,6 @@ const Estudiantes = () => {
     setLoading(true);
     try {
       const res = await apiAcademy.get("/estudiantes");
-      // endpoint devuelve res.data.data
       const data = res.data.data || [];
       setEstudiantes(data);
       setFiltered(data);
@@ -61,6 +68,26 @@ const Estudiantes = () => {
       notification.error({ message: "Error al cargar estudiantes" });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Trae todas las matrículas una sola vez y arma un Map por estudianteId
+  // para evitar N+1 en la columna "Ciclos".
+  const fetchResumenMatriculas = async () => {
+    try {
+      const res = await apiAcademy.get("/matriculas");
+      const map = new Map();
+      for (const m of res.data.data || []) {
+        const eid = m.estudianteId ?? m.estudiante?.id;
+        if (!eid) continue;
+        const cur = map.get(eid) || { total: 0, activos: 0 };
+        cur.total += 1;
+        if (m.estado === "matriculado") cur.activos += 1;
+        map.set(eid, cur);
+      }
+      setResumenMap(map);
+    } catch {
+      setResumenMap(new Map());
     }
   };
   // 🔹 Generar QR en base64
@@ -97,16 +124,6 @@ const Estudiantes = () => {
     const content = await zip.generateAsync({ type: "blob" });
     saveAs(content, "qrs_estudiantes.zip");
     message.success("Descarga completada: qrs_estudiantes.zip");
-  };
-
-  // trae todas las matriculas (para contar por estudiante) - optimizado: traer once y filtrar localmente
-  const fetchMatriculas = async () => {
-    try {
-      const res = await apiAcademy.get("/matriculas");
-      return res.data.data || [];
-    } catch (err) {
-      return [];
-    }
   };
 
   // filtros externos
@@ -147,17 +164,27 @@ const Estudiantes = () => {
   // abrir modal editar (edita person y student)
   const openEditModal = async (record) => {
     setCurrentEstudiante(record);
-    // llenar form con person + estudiante fields
     editForm.setFieldsValue({
       nombre: record.person.nombre,
       apellido: record.person.apellido,
       dni: record.person.dni,
       whatsapp: record.person.whatsapp,
       email: record.person.email,
-      nombre_apoderado: record.nombreApoderado || "",
-      numero_apoderado: record.numeroApoderado || "",
-      sede_id: record.person.sedeId || null, // 👈 sede del estudiante
+      sede_id: record.person.sedeId || null,
     });
+    // Apoderados pre-cargados con su pivot data (parentescoRelacion + esPrincipal)
+    setApoderadosEdit(
+      (record.apoderados || []).map((a) => ({
+        apoderadoId: a.id,
+        dni: a.dni,
+        nombre: a.nombre,
+        apellido: a.apellido,
+        whatsapp: a.whatsapp,
+        email: a.email,
+        parentesco: a.parentescoRelacion || a.parentesco || null,
+        esPrincipal: !!a.esPrincipal,
+      }))
+    );
     setIsEditModalOpen(true);
   };
 
@@ -165,45 +192,38 @@ const Estudiantes = () => {
     try {
       const values = await editForm.validateFields();
 
-      // 1) actualizar person
       await apiAcademy.put(`/persons/${currentEstudiante.person.id}`, {
         nombre: values.nombre,
         apellido: values.apellido,
         dni: values.dni,
         whatsapp: values.whatsapp,
         email: values.email,
-        sedeId: values.sede_id, // 👈 sede seleccionada
+        sedeId: values.sede_id,
       });
 
-      // 2) actualizar o crear estudiante (si no tiene)
       if (currentEstudiante.id) {
-        // actualizar estudiante (PUT si tu API lo soporta)
         await apiAcademy.put(`/estudiantes/${currentEstudiante.id}`, {
-          nombreApoderado: values.nombre_apoderado,
-          numeroApoderado: values.numero_apoderado,
+          apoderados: apoderadosEdit,
         });
       } else {
-        // si por alguna razón no existe estudiante, lo creamos
         await apiAcademy.post("/estudiantes", {
           personId: currentEstudiante.person.id,
-          nombreApoderado: values.nombre_apoderado,
-          numeroApoderado: values.numero_apoderado,
+          apoderados: apoderadosEdit,
         });
       }
 
       notification.success({ message: "Estudiante actualizado" });
       setIsEditModalOpen(false);
+      setApoderadosEdit([]);
       fetchEstudiantes();
     } catch (err) {
       notification.error({ message: "Error al actualizar estudiante" });
     }
   };
 
-  // columna Ciclos -> obtiene conteo total y activos por estudiante
+  // columna Ciclos -> usa el resumen precalculado en el padre
   const ciclosColumnRender = (record) => {
-    // traemos matriculas y las filtramos por estudiante.id
-    // NOTA: sacamos matriculas desde API cada vez; para optimizar, puedes cachearlas
-    return <CiclosResumen estudianteId={record.id} />;
+    return <CiclosResumen resumen={resumenMap.get(record.id)} />;
   };
   const [sedes, setSedes] = useState([]);
   const [sedeSeleccionada, setSedeSeleccionada] = useState(null);
@@ -275,8 +295,24 @@ const Estudiantes = () => {
               apellido = partes.slice(1).join(" ");
           }
 
-          // escoger número apoderado (mamá o papá)
-          const numeroApoderado = r.telMama || r.telPapa || "";
+          // Construir lista de apoderados desde tel mamá / tel papá
+          const apoderados = [];
+          if (r.telMama) {
+            apoderados.push({
+              nombre: "Mamá",
+              whatsapp: r.telMama,
+              parentesco: "Madre",
+              esPrincipal: true,
+            });
+          }
+          if (r.telPapa) {
+            apoderados.push({
+              nombre: "Papá",
+              whatsapp: r.telPapa,
+              parentesco: "Padre",
+              esPrincipal: apoderados.length === 0,
+            });
+          }
 
           // 1) Crear Person
           const personRes = await apiAcademy.post("/persons", {
@@ -286,16 +322,15 @@ const Estudiantes = () => {
             whatsapp: r.telefonoAlumno || "",
             email: r.email || "",
             tipo: "estudiante",
-            sedeId: sedeSeleccionada, // 👈 agregado aquí
+            sedeId: sedeSeleccionada,
           });
 
           const personId = personRes.data.data.id;
 
-          // 2) Crear Estudiante
+          // 2) Crear Estudiante con apoderados
           await apiAcademy.post("/estudiantes", {
             personId,
-            nombreApoderado: "", // no viene en Excel
-            numeroApoderado,
+            apoderados,
           });
         }
 
@@ -352,14 +387,34 @@ const Estudiantes = () => {
       width: 220,
     },
     {
-      title: "Contacto",
-      key: "contacto",
-      render: (_, record) => (
-        <div>
-          <div>Apoderado: {record.nombreApoderado || "-"}</div>
-          <div>Tel: {record.numeroApoderado || "-"}</div>
-        </div>
-      ),
+      title: "Apoderados",
+      key: "apoderados",
+      render: (_, record) => {
+        const apoderados = record.apoderados || [];
+        if (apoderados.length === 0)
+          return <span className="text-gray-400 text-xs">Sin apoderados</span>;
+        return (
+          <div className="text-xs leading-relaxed">
+            {apoderados.map((a) => (
+              <div key={a.id}>
+                <span
+                  className={
+                    a.esPrincipal
+                      ? "font-semibold text-primary"
+                      : "font-medium"
+                  }
+                >
+                  {a.nombre} {a.apellido || ""}
+                </span>
+                {a.parentescoRelacion ? (
+                  <span className="text-gray-500"> ({a.parentescoRelacion})</span>
+                ) : null}
+                <div className="text-gray-500">{a.whatsapp}</div>
+              </div>
+            ))}
+          </div>
+        );
+      },
     },
     {
       title: "Acciones",
@@ -496,61 +551,71 @@ const Estudiantes = () => {
       <Modal
         title="Editar Estudiante"
         open={isEditModalOpen}
-        onCancel={() => setIsEditModalOpen(false)}
+        onCancel={() => {
+          setIsEditModalOpen(false);
+          setApoderadosEdit([]);
+        }}
         onOk={handleSaveEdit}
+        width={760}
         okButtonProps={{ className: "bg-primary text-white" }}
+        destroyOnClose
       >
         <Form layout="vertical" form={editForm}>
-          <Form.Item label="Nombre" name="nombre" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item label="Apellido" name="apellido">
-            <Input />
-          </Form.Item>
-          <Form.Item label="DNI" name="dni">
-            <Input />
-          </Form.Item>
-          <Form.Item label="WhatsApp" name="whatsapp">
-            <Input />
-          </Form.Item>
-          <Form.Item label="Email" name="email">
-            <Input />
-          </Form.Item>
-
-          {/* 🔹 Selección de sede */}
-          <Form.Item
-            label="Sede"
-            name="sede_id"
-            rules={[{ required: true, message: "Selecciona una sede" }]}
-          >
-            <Select placeholder="Selecciona una sede">
-              {sedes.map((s) => (
-                <Option key={s.id} value={s.id}>
-                  {s.nameReferential}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-          <label className="text-md font-medium" htmlFor="Datos Extra">
-            Datos Extra
-          </label>
-          <Form.Item label="Nombre Apoderado" name="nombre_apoderado">
-            <Input />
-          </Form.Item>
-          <Form.Item label="Número Apoderado" name="numero_apoderado">
-            <Input />
-          </Form.Item>
+          <div className="grid grid-cols-2 gap-x-4">
+            <Form.Item
+              label="Nombre"
+              name="nombre"
+              rules={[{ required: true }]}
+            >
+              <Input />
+            </Form.Item>
+            <Form.Item label="Apellido" name="apellido">
+              <Input />
+            </Form.Item>
+            <Form.Item label="DNI" name="dni">
+              <Input />
+            </Form.Item>
+            <Form.Item label="WhatsApp" name="whatsapp">
+              <Input />
+            </Form.Item>
+            <Form.Item label="Email" name="email">
+              <Input />
+            </Form.Item>
+            <Form.Item
+              label="Sede"
+              name="sede_id"
+              rules={[{ required: true, message: "Selecciona una sede" }]}
+            >
+              <Select placeholder="Selecciona una sede">
+                {sedes.map((s) => (
+                  <Option key={s.id} value={s.id}>
+                    {s.nameReferential}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </div>
         </Form>
+
+        <div className="mt-4">
+          <label className="text-md font-medium block mb-2">Apoderados</label>
+          <ApoderadosManager
+            value={apoderadosEdit}
+            onChange={setApoderadosEdit}
+          />
+        </div>
       </Modal>
       <Modal
         title="Crear Estudiante"
         open={isCreateModalOpen}
-        onCancel={() => setIsCreateModalOpen(false)}
+        onCancel={() => {
+          setIsCreateModalOpen(false);
+          setApoderadosCreate([]);
+        }}
         onOk={async () => {
           try {
             const values = await createForm.validateFields();
 
-            // 1) Crear person
             const personRes = await apiAcademy.post("/persons", {
               nombre: values.nombre,
               apellido: values.apellido,
@@ -558,16 +623,14 @@ const Estudiantes = () => {
               whatsapp: values.whatsapp,
               email: values.email,
               tipo: "estudiante",
-              sedeId: values.sede_id, // 👈 sede seleccionada
+              sedeId: values.sede_id,
             });
 
             const personId = personRes.data.data.id;
 
-            // 2) Crear estudiante
             await apiAcademy.post("/estudiantes", {
               personId,
-              nombreApoderado: values.nombre_apoderado,
-              numeroApoderado: values.numero_apoderado,
+              apoderados: apoderadosCreate,
             });
 
             notification.success({
@@ -575,55 +638,60 @@ const Estudiantes = () => {
             });
             setIsCreateModalOpen(false);
             createForm.resetFields();
+            setApoderadosCreate([]);
             fetchEstudiantes();
           } catch (err) {
             notification.error({ message: "Error al crear estudiante" });
           }
         }}
+        width={760}
         okButtonProps={{ className: "bg-primary text-white" }}
+        destroyOnClose
       >
         <Form layout="vertical" form={createForm}>
-          <Form.Item label="Nombre" name="nombre" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item label="Apellido" name="apellido">
-            <Input />
-          </Form.Item>
-          <Form.Item label="DNI" name="dni" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item label="WhatsApp" name="whatsapp">
-            <Input />
-          </Form.Item>
-          <Form.Item label="Email" name="email">
-            <Input />
-          </Form.Item>
-
-          {/* 🔹 Selección de sede */}
-          <Form.Item
-            label="Sede"
-            name="sede_id"
-            rules={[{ required: true, message: "Selecciona una sede" }]}
-          >
-            <Select placeholder="Selecciona una sede">
-              {sedes.map((s) => (
-                <Option key={s.id} value={s.id}>
-                  {s.nameReferential}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-
-          <label className="text-md font-medium" htmlFor="Datos Extra">
-            Datos Extra
-          </label>
-          <Form.Item label="Nombre Apoderado" name="nombre_apoderado">
-            <Input />
-          </Form.Item>
-          <Form.Item label="Número Apoderado" name="numero_apoderado">
-            <Input />
-          </Form.Item>
+          <div className="grid grid-cols-2 gap-x-4">
+            <Form.Item
+              label="Nombre"
+              name="nombre"
+              rules={[{ required: true }]}
+            >
+              <Input />
+            </Form.Item>
+            <Form.Item label="Apellido" name="apellido">
+              <Input />
+            </Form.Item>
+            <Form.Item label="DNI" name="dni" rules={[{ required: true }]}>
+              <Input />
+            </Form.Item>
+            <Form.Item label="WhatsApp" name="whatsapp">
+              <Input />
+            </Form.Item>
+            <Form.Item label="Email" name="email">
+              <Input />
+            </Form.Item>
+            <Form.Item
+              label="Sede"
+              name="sede_id"
+              rules={[{ required: true, message: "Selecciona una sede" }]}
+            >
+              <Select placeholder="Selecciona una sede">
+                {sedes.map((s) => (
+                  <Option key={s.id} value={s.id}>
+                    {s.nameReferential}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </div>
         </Form>
+
+        <div className="mt-4">
+          <label className="text-md font-medium block mb-2">Apoderados</label>
+          <ApoderadosManager
+            value={apoderadosCreate}
+            onChange={setApoderadosCreate}
+          />
+        </div>
       </Modal>
     </div>
   );
@@ -632,52 +700,20 @@ const Estudiantes = () => {
 export default Estudiantes;
 
 /**
- * Componente pequeño que muestra resumen de ciclos para un estudiante.
- * Hace request localmente a /matriculas y filtra por estudianteId.
+ * Resumen de ciclos para un estudiante. Recibe el conteo precalculado
+ * en el padre — no hace fetch propio.
  */
-const CiclosResumen = ({ estudianteId }) => {
-  const [totales, setTotales] = useState({
-    total: 0,
-    activos: 0,
-    cargando: true,
-  });
-
-  useEffect(() => {
-    let mounted = true;
-
-    const load = async () => {
-      try {
-        const res = await apiAcademy.get("/matriculas");
-        const data = res.data.data || [];
-        const relacionados = data.filter((m) => {
-          // m.estudiante puede ser object con id
-          const id = m.estudiante?.id ?? m.estudianteId ?? null;
-          return id === estudianteId;
-        });
-
-        const activos = relacionados.filter(
-          (r) => r.estado === "matriculado"
-        ).length;
-        if (mounted)
-          setTotales({ total: relacionados.length, activos, cargando: false });
-      } catch (err) {
-        if (mounted) setTotales({ total: 0, activos: 0, cargando: false });
-      }
-    };
-
-    load();
-    return () => (mounted = false);
-  }, [estudianteId]);
-
-  if (totales.cargando) return <div>Cargando...</div>;
-
+const CiclosResumen = ({ resumen }) => {
+  if (!resumen) {
+    return <div className="text-gray-400 text-sm">Sin matrículas</div>;
+  }
   return (
     <div>
       <div>
-        Total ciclos: <strong>{totales.total}</strong>
+        Total ciclos: <strong>{resumen.total}</strong>
       </div>
       <div>
-        Matriculas activas: <strong>{totales.activos}</strong>
+        Matrículas activas: <strong>{resumen.activos}</strong>
       </div>
     </div>
   );

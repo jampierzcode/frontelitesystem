@@ -26,6 +26,13 @@ import NotasSimulacro from "./pages/superadmin/NotasSimulacro";
 import Estudiantes from "./pages/superadmin/Estudiantes";
 import Sedes from "./pages/superadmin/Sedes";
 import Schedules from "./pages/superadmin/Schedules";
+import Profesores from "./pages/superadmin/Profesores";
+import Cursos from "./pages/superadmin/Cursos";
+import PoliticasAsistencia from "./pages/superadmin/PoliticasAsistencia";
+import SolicitudesMatricula from "./pages/superadmin/SolicitudesMatricula";
+import SolicitudDetalle from "./pages/superadmin/SolicitudDetalle";
+import Configuracion from "./pages/superadmin/Configuracion";
+import Turnos from "./pages/superadmin/Turnos";
 
 function App() {
   return (
@@ -154,6 +161,76 @@ function App() {
               <PrivateRoute roles={["superadmin"]}>
                 <LayoutSuperadmin>
                   <Schedules />
+                </LayoutSuperadmin>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/profesores"
+            element={
+              <PrivateRoute roles={["superadmin"]}>
+                <LayoutSuperadmin>
+                  <Profesores />
+                </LayoutSuperadmin>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/cursos"
+            element={
+              <PrivateRoute roles={["superadmin"]}>
+                <LayoutSuperadmin>
+                  <Cursos />
+                </LayoutSuperadmin>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/politicas-asistencia"
+            element={
+              <PrivateRoute roles={["superadmin"]}>
+                <LayoutSuperadmin>
+                  <PoliticasAsistencia />
+                </LayoutSuperadmin>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/solicitudes-matricula"
+            element={
+              <PrivateRoute roles={["superadmin"]}>
+                <LayoutSuperadmin>
+                  <SolicitudesMatricula />
+                </LayoutSuperadmin>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/solicitudes-matricula/:id"
+            element={
+              <PrivateRoute roles={["superadmin"]}>
+                <LayoutSuperadmin>
+                  <SolicitudDetalle />
+                </LayoutSuperadmin>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/configuracion"
+            element={
+              <PrivateRoute roles={["superadmin"]}>
+                <LayoutSuperadmin>
+                  <Configuracion />
+                </LayoutSuperadmin>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/turnos"
+            element={
+              <PrivateRoute roles={["superadmin"]}>
+                <LayoutSuperadmin>
+                  <Turnos />
                 </LayoutSuperadmin>
               </PrivateRoute>
             }

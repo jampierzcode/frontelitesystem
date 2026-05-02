@@ -8,6 +8,19 @@ module.exports = {
         primary: "#0A30BC", // Color principal
         secondary: "#DDAE5E", // Color secundario
       },
+      fontFamily: {
+        sans: [
+          "Inter",
+          "system-ui",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "Segoe UI",
+          "Roboto",
+          "Helvetica Neue",
+          "Arial",
+          "sans-serif",
+        ],
+      },
     },
   },
   plugins: [],

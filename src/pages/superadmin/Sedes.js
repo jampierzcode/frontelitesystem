@@ -44,6 +44,7 @@ const Sedes = () => {
       department: record.department,
       province: record.province,
       district: record.district,
+      googleMapsUrl: record.googleMapsUrl || "",
     });
     setIsModalOpen(true);
   };
@@ -158,6 +159,13 @@ const Sedes = () => {
           </Form.Item>
           <Form.Item label="Distrito" name="district">
             <Input />
+          </Form.Item>
+          <Form.Item
+            label="URL de Google Maps"
+            name="googleMapsUrl"
+            extra="Pega aquí el link compartido de Google Maps de esta sede. Los estudiantes podrán abrirlo desde el sitio público."
+          >
+            <Input placeholder="https://maps.app.goo.gl/..." />
           </Form.Item>
         </Form>
       </Modal>

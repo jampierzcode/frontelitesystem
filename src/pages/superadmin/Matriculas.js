@@ -6,11 +6,9 @@ import {
   Form,
   Input,
   Select,
+  DatePicker,
   message,
   Popconfirm,
-  Upload,
-  Image,
-  Space,
   notification,
 } from "antd";
 import { Dropdown, Menu } from "antd";
@@ -18,47 +16,52 @@ import {
   FaEllipsisV,
   FaEdit,
   FaTrash,
-  FaHistory,
-  FaMoneyBill,
+  FaCalendarAlt,
 } from "react-icons/fa";
 
-import { UploadOutlined } from "@ant-design/icons";
-import axios from "axios";
 import apiAcademy from "../../components/auth/apiAcademy";
 import dayjs from "dayjs";
-import { FaEye } from "react-icons/fa6";
+import CronogramaMatriculaModal from "../../components/rolSuperAdmin/CronogramaMatriculaModal";
 
 const { Option } = Select;
 
 const Matriculas = () => {
   const [matriculas, setMatriculas] = useState([]);
   const [filteredMatriculas, setFilteredMatriculas] = useState([]);
-  const [personas, setPersonas] = useState([]);
+  const [estudiantes, setEstudiantes] = useState([]);
   const [ciclos, setCiclos] = useState([]);
+  const [turnos, setTurnos] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isPagoModalOpen, setIsPagoModalOpen] = useState(false);
 
   const [form] = Form.useForm();
-  const [pagoForm] = Form.useForm();
   const [filterForm] = Form.useForm();
 
   const [currentMatricula, setCurrentMatricula] = useState(null);
+  const [cronogramaOpen, setCronogramaOpen] = useState(false);
+  const [cronogramaMatricula, setCronogramaMatricula] = useState(null);
+
+  const openCronograma = (matricula) => {
+    setCronogramaMatricula(matricula);
+    setCronogramaOpen(true);
+  };
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [mats, pers, ciclosRes] = await Promise.all([
+      const [mats, ests, ciclosRes, turnosRes] = await Promise.all([
         apiAcademy.get("/matriculas"),
-        apiAcademy.get("/persons"),
+        apiAcademy.get("/estudiantes"),
         apiAcademy.get("/ciclos"),
+        apiAcademy.get("/turnos"),
       ]);
 
       setMatriculas(mats.data.data);
       setFilteredMatriculas(mats.data.data);
-      setPersonas(pers.data.data.filter((p) => p.tipo === "estudiante"));
+      setEstudiantes(ests.data.data || []);
       setCiclos(ciclosRes.data.data.filter((c) => c.status === 1));
+      setTurnos((turnosRes.data.data || []).filter((t) => t.activo));
     } catch (error) {
       message.error("Error al cargar datos");
     }
@@ -106,60 +109,92 @@ const Matriculas = () => {
   const openEditMatricula = (matricula) => {
     setCurrentMatricula(matricula);
     form.setFieldsValue({
-      person_id: matricula.estudiante.person.id,
-      nombre_apoderado: matricula.estudiante.nombreApoderado,
-      numero_apoderado: matricula.estudiante.numeroApoderado,
+      estudiante_id: matricula.estudianteId,
       ciclo_id: matricula.ciclo.id,
       modalidad: matricula.modalidad,
-      turno: matricula.turno,
+      turno_id: matricula.turnoId || matricula.turno?.id,
       precio_matricula: matricula.precioMatricula,
       precio_mensualidad: matricula.precioMensualidad,
-      estado: matricula.estado,
+      fechas: [
+        matricula.fechaInicio ? dayjs(matricula.fechaInicio) : null,
+        matricula.fechaFin ? dayjs(matricula.fechaFin) : null,
+      ],
     });
     setIsModalOpen(true);
+  };
+
+  // Autollena precios y fechas desde el ciclo según la modalidad.
+  const autofillPrecios = (cicloId, modalidad) => {
+    if (!cicloId || !modalidad) return;
+    const ciclo = ciclos.find((c) => c.id === cicloId);
+    if (!ciclo) return;
+    const matricula =
+      modalidad === "presencial"
+        ? ciclo.montoMatriculaPresencial
+        : ciclo.montoMatriculaVirtual;
+    const mensualidad =
+      modalidad === "presencial"
+        ? ciclo.montoMensualidadPresencial
+        : ciclo.montoMensualidadVirtual;
+    form.setFieldsValue({
+      precio_matricula: matricula ?? 0,
+      precio_mensualidad: mensualidad ?? 0,
+    });
+  };
+
+  const autofillFechas = (cicloId) => {
+    if (!cicloId) return;
+    const ciclo = ciclos.find((c) => c.id === cicloId);
+    if (!ciclo) return;
+    // Solo en creación: no pisar fechas si está editando
+    if (currentMatricula) return;
+    form.setFieldsValue({
+      fechas: [
+        ciclo.fechaInicio ? dayjs(ciclo.fechaInicio) : null,
+        ciclo.fechaFin ? dayjs(ciclo.fechaFin) : null,
+      ],
+    });
+  };
+
+  const handleFormValuesChange = (changed, all) => {
+    if ("ciclo_id" in changed || "modalidad" in changed) {
+      autofillPrecios(all.ciclo_id, all.modalidad);
+    }
+    if ("ciclo_id" in changed) {
+      autofillFechas(all.ciclo_id);
+    }
   };
 
   const handleCreateMatricula = async () => {
     try {
       const values = await form.validateFields();
 
+      const fechaInicio = values.fechas?.[0]?.format("YYYY-MM-DD") || null;
+      const fechaFin = values.fechas?.[1]?.format("YYYY-MM-DD") || null;
+
       if (currentMatricula) {
-        // editar
         await apiAcademy.put(`/matriculas/${currentMatricula.id}`, {
           cicloId: values.ciclo_id,
           modalidad: values.modalidad,
-          turno: values.turno,
+          turnoId: values.turno_id,
           precioMatricula: values.precio_matricula,
           precioMensualidad: values.precio_mensualidad,
-          estado: values.estado || "pendiente",
+          fechaInicio,
+          fechaFin,
         });
         message.success("Matrícula actualizada");
       } else {
-        // crear
-        let idEstudiante = null;
-        const persona = personas.find((p) => p.id === values.person_id);
-
-        if (persona.estudiante === null) {
-          const dataEstudiante = await apiAcademy.post("/estudiantes", {
-            personId: values.person_id,
-            nombreApoderado: values.nombre_apoderado,
-            numeroApoderado: values.numero_apoderado,
-          });
-          idEstudiante = dataEstudiante.data.data.id;
-        } else {
-          idEstudiante = persona.estudiante.id;
-        }
-
         await apiAcademy.post("/matriculas", {
-          estudianteId: idEstudiante,
+          estudianteId: values.estudiante_id,
           cicloId: values.ciclo_id,
           modalidad: values.modalidad,
-          turno: values.turno,
+          turnoId: values.turno_id,
           precioMatricula: values.precio_matricula,
           precioMensualidad: values.precio_mensualidad,
-          estado: values.estado || "pendiente",
+          fechaInicio,
+          fechaFin,
         });
-        message.success("Matrícula creada");
+        message.success("Matrícula creada con cronograma");
       }
 
       setIsModalOpen(false);
@@ -178,79 +213,6 @@ const Matriculas = () => {
     } catch (err) {
       message.error("Error al eliminar matrícula");
     }
-  };
-
-  // ---- PAGOS ----
-  const [isHistorialModalOpen, setIsHistorialModalOpen] = useState(false);
-  const [historialPagos, setHistorialPagos] = useState([]);
-  const [voucherCurrentUrl, setVoucherCurrentUrl] = useState(null);
-  const [isOpenVoucher, setIsOpenVoucher] = useState(false);
-
-  const openPagoModal = (matricula) => {
-    setCurrentMatricula(matricula);
-    pagoForm.resetFields();
-    setIsPagoModalOpen(true);
-  };
-  const [isSubmittingPago, setIsSubmittingPago] = useState(false);
-  const handlePago = async () => {
-    if (isSubmittingPago) return; // protección doble click
-    setIsSubmittingPago(true);
-
-    try {
-      const values = await pagoForm.validateFields();
-
-      let urlVoucher = null;
-
-      // 👇 Solo subir si hay voucher
-      if (values.voucher && values.voucher.length > 0) {
-        const formData = new FormData();
-        formData.append("folder", "vouchers");
-        formData.append("files", values.voucher[0].originFileObj);
-
-        const uploadRes = await axios.post(
-          "https://api.academiapreuniversitariaelite.com/index.php",
-          formData
-        );
-
-        urlVoucher = uploadRes.data.files[0].url;
-      }
-
-      await apiAcademy.post("/pagos", {
-        matriculaId: currentMatricula.id,
-        tipo: values.tipo,
-        metodo: values.metodo,
-        monto: values.monto,
-        codigoOperacion: values.codigo_operacion || null,
-        imagenVoucherUrl: urlVoucher, // 👈 puede ser null
-        estado: "validado",
-      });
-
-      message.success("Pago registrado");
-      setIsPagoModalOpen(false);
-      fetchData();
-    } catch (err) {
-      notification.error({ message: "Error al generar pago" });
-    } finally {
-      setIsSubmittingPago(false);
-    }
-  };
-
-  const openHistorialPagos = async (matricula) => {
-    try {
-      const res = await apiAcademy.get("/pagos");
-      setHistorialPagos(
-        res.data.data.filter((p) => p.matriculaId === matricula.id)
-      );
-      setIsHistorialModalOpen(true);
-    } catch (err) {
-      message.error("Error al cargar historial");
-    }
-  };
-
-  const showVoucher = (id) => {
-    const voucherUrl = historialPagos.find((m) => m.id === id).imagenVoucherUrl;
-    setVoucherCurrentUrl(voucherUrl);
-    setIsOpenVoucher(true);
   };
 
   const handleDeleteWithValidation = async (record) => {
@@ -344,7 +306,7 @@ const Matriculas = () => {
             {dayjs(record.ciclo.fechaFin).format("DD-MM-YYYY")}
           </p>
           <p className="text-sm capitalize">
-            {record.modalidad} - {record.turno}
+            {record.modalidad} - {record.turno?.nombre || "—"}
           </p>
         </div>
       ),
@@ -366,21 +328,12 @@ const Matriculas = () => {
       render: (_, record) => {
         const menu = (
           <Menu>
-            {record.estado === "pendiente" && (
-              <Menu.Item
-                key="pago"
-                icon={<FaMoneyBill className="text-green-600" />}
-                onClick={() => openPagoModal(record)}
-              >
-                Generar Pago
-              </Menu.Item>
-            )}
             <Menu.Item
-              key="historial"
-              icon={<FaHistory className="text-blue-600" />}
-              onClick={() => openHistorialPagos(record)}
+              key="cronograma"
+              icon={<FaCalendarAlt className="text-green-600" />}
+              onClick={() => openCronograma(record)}
             >
-              Historial de Pagos
+              Cronograma de pagos
             </Menu.Item>
             <Menu.Item
               key="editar"
@@ -415,56 +368,6 @@ const Matriculas = () => {
       },
     },
   ];
-
-  // Estados (añádelos junto a los demás useState)
-  const [isValidarModalOpen, setIsValidarModalOpen] = useState(false);
-  const [pagoSeleccionadoValidar, setPagoSeleccionadoValidar] = useState(null);
-
-  // Función para abrir el modal de validación
-  const handleOpenValidarModal = (pago) => {
-    setPagoSeleccionadoValidar(pago);
-    setIsValidarModalOpen(true);
-  };
-
-  // Función para validar un pago (PUT /pagos/:id { estado: "validado" })
-  const handleValidarPago = async () => {
-    if (!pagoSeleccionadoValidar) return;
-
-    try {
-      const pagoId = pagoSeleccionadoValidar.id;
-      const matriculaId = pagoSeleccionadoValidar.matriculaId;
-
-      // Llamada PUT a la ruta de Adonis para actualizar estado
-      await apiAcademy.put(`/pagos/${pagoId}`, { estado: "validado" });
-
-      message.success("Pago validado correctamente");
-
-      // Volver a cargar los pagos del historial para la matrícula actual
-      const res = await apiAcademy.get("/pagos");
-      const pagosFiltrados = res.data.data.filter(
-        (p) => p.matriculaId === matriculaId
-      );
-      setHistorialPagos(pagosFiltrados);
-
-      // Cerrar modal y limpiar selección
-      setIsValidarModalOpen(false);
-      setPagoSeleccionadoValidar(null);
-
-      // Refrescar datos principales (matriculas) para reflejar cambios (opcional pero recomendado)
-      fetchData();
-    } catch (err) {
-      console.error(err);
-      message.error("Error al validar el pago");
-    }
-  };
-  const handleTipoPago = (value) => {
-    if (value === "matricula") {
-      pagoForm.setFieldsValue({ monto: currentMatricula.precioMatricula });
-    } else {
-      // obtener siguiente cuota (si tienes schedule)
-      pagoForm.setFieldsValue({ monto: currentMatricula.precioMensualidad });
-    }
-  };
 
   return (
     <div>
@@ -528,34 +431,38 @@ const Matriculas = () => {
         okText="Guardar"
         okButtonProps={{ className: "bg-primary text-white" }}
       >
-        <Form layout="vertical" form={form}>
+        <Form
+          layout="vertical"
+          form={form}
+          onValuesChange={handleFormValuesChange}
+        >
           <Form.Item
-            label="Persona Estudiante"
-            name="person_id"
-            rules={[{ required: true }]}
+            label="Estudiante"
+            name="estudiante_id"
+            rules={[{ required: true, message: "Selecciona un estudiante" }]}
           >
-            <Select placeholder="Seleccione un estudiante">
-              {personas.map((p) => (
-                <Option key={p.id} value={p.id}>
-                  {p.nombre} {p.apellido}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            label="Nombre Apoderado"
-            name="nombre_apoderado"
-            rules={[{ required: true }]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            label="Número Apoderado"
-            name="numero_apoderado"
-            rules={[{ required: true }]}
-          >
-            <Input />
+            <Select
+              placeholder="Buscar por nombre, apellido o DNI"
+              disabled={!!currentMatricula}
+              showSearch
+              optionFilterProp="label"
+              filterOption={(input, option) =>
+                (option?.label ?? "")
+                  .toLowerCase()
+                  .includes(input.toLowerCase())
+              }
+              notFoundContent={
+                estudiantes.length === 0
+                  ? "No hay estudiantes. Crea uno desde /estudiantes primero."
+                  : "Sin coincidencias"
+              }
+              options={estudiantes.map((e) => ({
+                value: e.id,
+                label: `${e.person?.nombre || ""} ${e.person?.apellido || ""} — DNI ${
+                  e.person?.dni || "—"
+                }`,
+              }))}
+            />
           </Form.Item>
 
           <Form.Item label="Ciclo" name="ciclo_id" rules={[{ required: true }]}>
@@ -569,227 +476,81 @@ const Matriculas = () => {
           </Form.Item>
 
           <Form.Item
-            label="Modalidad"
-            name="modalidad"
-            rules={[{ required: true }]}
+            label="Vigencia (inicio - fin)"
+            name="fechas"
+            rules={[
+              {
+                validator: (_, val) => {
+                  if (!val || !val[0] || !val[1])
+                    return Promise.reject("Selecciona inicio y fin");
+                  return Promise.resolve();
+                },
+              },
+            ]}
+            extra="Por defecto se llena con las fechas del ciclo. Edítalo si el alumno solo cursa parte del ciclo."
           >
-            <Select>
-              <Option value="presencial">Presencial</Option>
-              <Option value="virtual">Virtual</Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item label="Turno" name="turno" rules={[{ required: true }]}>
-            <Select>
-              <Option value="MAÑANA">Mañana</Option>
-              <Option value="TARDE">Tarde</Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item label="Precio Matrícula" name="precio_matricula">
-            <Input readOnly />
-          </Form.Item>
-          <Form.Item label="Precio Mensualidad" name="precio_mensualidad">
-            <Input readOnly />
-          </Form.Item>
-          <Form.Item label="Estado" name="estado">
-            <Select>
-              <Option value="pendiente">Pendiente</Option>
-              <Option value="matriculado">Matriculado</Option>
-            </Select>
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      {/* Generar Pago */}
-      <Modal
-        title="Generar Pago"
-        open={isPagoModalOpen}
-        onCancel={() => setIsPagoModalOpen(false)}
-        onOk={handlePago}
-        okText="Pagar"
-        okButtonProps={{
-          className: "bg-primary text-white",
-          loading: isSubmittingPago, // 👈 Controla el estado de carga
-        }}
-      >
-        <Form layout="vertical" form={pagoForm}>
-          <Form.Item
-            label="Tipo de Pago"
-            name="tipo"
-            rules={[{ required: true }]}
-          >
-            <Select onChange={handleTipoPago}>
-              <Option value="matricula">Matrícula</Option>
-              <Option value="mensualidad">Mensualidad</Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            label="Método de Pago"
-            name="metodo"
-            rules={[{ required: true }]}
-          >
-            <Select>
-              <Option value="efectivo">Efectivo</Option>
-              <Option value="yape">Yape</Option>
-              <Option value="plin">Plin</Option>
-              <Option value="tarjeta">Tarjeta</Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item label="Monto" name="monto" rules={[{ required: true }]}>
-            <Input type="number" />
-          </Form.Item>
-
-          <Form.Item label="Código Operación" name="codigo_operacion">
-            <Input />
-          </Form.Item>
-
-          {/* 👇 Ya no es obligatorio */}
-          <Form.Item
-            label="Voucher"
-            name="voucher"
-            valuePropName="fileList"
-            getValueFromEvent={(e) => e.fileList}
-          >
-            <Upload beforeUpload={() => false} maxCount={1}>
-              <Button icon={<UploadOutlined />}>Subir Voucher</Button>
-            </Upload>
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      {/* Historial de Pagos */}
-      <Modal
-        title="Historial de Pagos"
-        open={isHistorialModalOpen}
-        onCancel={() => setIsHistorialModalOpen(false)}
-        footer={null}
-        width={800}
-      >
-        <Table
-          dataSource={historialPagos}
-          columns={[
-            { title: "Tipo", dataIndex: "tipo" },
-            { title: "Monto", dataIndex: "monto" },
-            { title: "Método", dataIndex: "metodo" },
-            { title: "Estado", dataIndex: "estado" },
-            { title: "Codigo", dataIndex: "codigoOperacion" },
-            {
-              title: "Voucher",
-              render: (_, record) => (
-                <button
-                  className="bg-white rounded shadow flex gap-2 items-center px-3 py-1"
-                  onClick={() => showVoucher(record.id)}
-                >
-                  Ver <FaEye />
-                </button>
-              ),
-            },
-            {
-              title: "Fecha Pago",
-              render: (_, record) =>
-                dayjs(record.createdAt).format("DD-MM-YYYY"),
-            },
-            {
-              title: "Acciones",
-              key: "acciones",
-              render: (_, record) => (
-                <Space>
-                  <Button
-                    type="primary"
-                    size="small"
-                    disabled={record.estado === "validado"}
-                    onClick={() => handleOpenValidarModal(record)}
-                  >
-                    Validar
-                  </Button>
-                </Space>
-              ),
-            },
-          ]}
-          rowKey="id"
-          size="small"
-          pagination={false}
-        />
-      </Modal>
-
-      {/* Ver Voucher */}
-      <Modal
-        title="Imagen"
-        open={isOpenVoucher}
-        onCancel={() => setIsOpenVoucher(false)}
-        footer={null}
-      >
-        <Image width={300} src={voucherCurrentUrl} />
-      </Modal>
-      {/* Modal Validar Pago */}
-      <Modal
-        title="Validar Pago"
-        open={isValidarModalOpen}
-        onCancel={() => {
-          setIsValidarModalOpen(false);
-          setPagoSeleccionadoValidar(null);
-        }}
-        footer={null}
-      >
-        <div className="flex flex-col gap-4 items-center">
-          {/* Voucher (imagen) */}
-          {pagoSeleccionadoValidar?.imagenVoucherUrl ? (
-            <Image
-              src={pagoSeleccionadoValidar.imagenVoucherUrl}
-              alt="Voucher"
-              width={300}
-              preview={{ src: pagoSeleccionadoValidar.imagenVoucherUrl }}
+            <DatePicker.RangePicker
+              format="DD/MM/YYYY"
+              className="w-full"
+              placeholder={["Inicio", "Fin"]}
             />
-          ) : (
-            <div className="w-64 h-40 bg-gray-100 flex items-center justify-center">
-              Sin voucher
-            </div>
-          )}
+          </Form.Item>
 
-          {/* Detalles del pago */}
-          <div className="w-full">
-            <p>
-              <strong>Monto:</strong> S/ {pagoSeleccionadoValidar?.monto ?? "-"}
-            </p>
-            <p>
-              <strong>Método:</strong> {pagoSeleccionadoValidar?.metodo ?? "-"}
-            </p>
-            <p>
-              <strong>Código:</strong>{" "}
-              {pagoSeleccionadoValidar?.codigoOperacion ??
-                pagoSeleccionadoValidar?.codigo_operacion ??
-                "-"}
-            </p>
-            <p>
-              <strong>Fecha:</strong>{" "}
-              {pagoSeleccionadoValidar?.createdAt
-                ? dayjs(pagoSeleccionadoValidar.createdAt).format("DD-MM-YYYY")
-                : "-"}
-            </p>
+          <div className="grid grid-cols-2 gap-x-4">
+            <Form.Item
+              label="Modalidad"
+              name="modalidad"
+              rules={[{ required: true }]}
+            >
+              <Select>
+                <Option value="presencial">Presencial</Option>
+                <Option value="virtual">Virtual</Option>
+              </Select>
+            </Form.Item>
+
+            <Form.Item
+              label="Turno"
+              name="turno_id"
+              rules={[{ required: true }]}
+            >
+              <Select placeholder="Selecciona turno">
+                {turnos.map((t) => (
+                  <Option key={t.id} value={t.id}>
+                    {t.nombre} ({t.horaInicio?.slice(0, 5)} - {t.horaFin?.slice(0, 5)})
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+
+            <Form.Item
+              label="Precio Matrícula"
+              name="precio_matricula"
+              rules={[{ required: true, message: "Requerido" }]}
+              extra="Se autollena del ciclo. Editable para descuentos."
+            >
+              <Input type="number" min={0} step={10} />
+            </Form.Item>
+            <Form.Item
+              label="Precio Mensualidad"
+              name="precio_mensualidad"
+              rules={[{ required: true, message: "Requerido" }]}
+              extra="Se autollena del ciclo. Editable para descuentos."
+            >
+              <Input type="number" min={0} step={10} />
+            </Form.Item>
           </div>
 
-          {/* Botones */}
-          <div className="flex gap-2">
-            <Button
-              className="bg-primary text-white"
-              onClick={handleValidarPago}
-            >
-              Validar
-            </Button>
-            <Button
-              onClick={() => {
-                setIsValidarModalOpen(false);
-                setPagoSeleccionadoValidar(null);
-              }}
-            >
-              Cancelar
-            </Button>
-          </div>
-        </div>
+        </Form>
       </Modal>
+
+      <CronogramaMatriculaModal
+        open={cronogramaOpen}
+        matricula={cronogramaMatricula}
+        onClose={() => {
+          setCronogramaOpen(false);
+          setCronogramaMatricula(null);
+        }}
+      />
     </div>
   );
 };

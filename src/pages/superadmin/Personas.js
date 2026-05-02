@@ -213,7 +213,6 @@ const Personas = () => {
             <Option value="estudiante">Estudiante</Option>
             <Option value="profesor">Profesor</Option>
             <Option value="secretaria">Secretaria</Option>
-            <Option value="admin">Admin</Option>
           </Select>
         </Form.Item>
         <Form.Item>
@@ -275,7 +274,6 @@ const Personas = () => {
               <Option value="estudiante">Estudiante</Option>
               <Option value="profesor">Profesor</Option>
               <Option value="secretaria">Secretaria</Option>
-              <Option value="admin">Admin</Option>
             </Select>
           </Form.Item>
 

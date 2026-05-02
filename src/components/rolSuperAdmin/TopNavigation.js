@@ -1,8 +1,9 @@
 import dayjs from "dayjs";
 import React from "react";
-import { BsBellFill, BsJustifyRight } from "react-icons/bs";
+import { BsJustifyRight } from "react-icons/bs";
 
 import { useAuth } from "../AuthContext";
+import NotificacionesBell from "../notificaciones/NotificacionesBell";
 
 const TopNavigation = ({ open, setOpen }) => {
   const { auth } = useAuth();
@@ -22,12 +23,7 @@ const TopNavigation = ({ open, setOpen }) => {
           </div>
           <div className="hidden lg:flex justify-end self-start">
             <div className="self-center">
-              <div className="cursor-pointer counter-icon relative">
-                <div className="rounded-full bg-dark-purple text-white text-sm flex items-center justify-center w-5 h-5 text-center absolute -top-2 -right-2">
-                  <span className="text-white text-xs">2</span>
-                </div>
-                <BsBellFill className="text-xl ml-2 active-bell text-gray-400" />
-              </div>
+              <NotificacionesBell />
             </div>
             <div className="ml-3">
               <div className="flex flex-col items-end">

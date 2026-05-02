@@ -13,11 +13,12 @@ import {
 } from "react-icons/fa";
 import { MdOutlineClass, MdOutlineAssignment } from "react-icons/md";
 import { HiOutlineAcademicCap } from "react-icons/hi2";
-import { FaBuilding, FaUsersCog } from "react-icons/fa";
+import { FaBuilding } from "react-icons/fa";
 import { RiUserSettingsLine } from "react-icons/ri";
 import { LuNotebookPen } from "react-icons/lu";
 import { TbFileAnalytics } from "react-icons/tb";
 import { FaTimeline } from "react-icons/fa6";
+import { FiSettings } from "react-icons/fi";
 
 const Sidebar = ({ open, setOpen }) => {
   const { auth } = useAuth();
@@ -61,9 +62,19 @@ const Sidebar = ({ open, setOpen }) => {
           icon: <MdOutlineAssignment />, // gestión de matrículas
         },
         {
+          title: "Solicitudes",
+          url: "/solicitudes-matricula",
+          icon: <MdOutlineAssignment />,
+        },
+        {
           title: "Asistencias",
           url: "/asistencias",
           icon: <LuNotebookPen />, // pase de asistencia
+        },
+        {
+          title: "Políticas asistencia",
+          url: "/politicas-asistencia",
+          icon: <LuNotebookPen />,
         },
       ],
     },
@@ -75,6 +86,11 @@ const Sidebar = ({ open, setOpen }) => {
           title: "Profesores",
           url: "/profesores",
           icon: <FaChalkboardTeacher />, // lista profesores
+        },
+        {
+          title: "Cursos",
+          url: "/cursos",
+          icon: <MdOutlineClass />, // catálogo de cursos
         },
       ],
     },
@@ -119,9 +135,14 @@ const Sidebar = ({ open, setOpen }) => {
           icon: <MdOutlineClass />, // ciclos o cursos
         },
         {
-          title: "Roles",
-          url: "/roles",
-          icon: <FaUsersCog />, // permisos/roles
+          title: "Turnos",
+          url: "/turnos",
+          icon: <FaTimeline />,
+        },
+        {
+          title: "Configuración",
+          url: "/configuracion",
+          icon: <FiSettings />,
         },
       ],
     },
