@@ -94,10 +94,10 @@ const Usuarios = () => {
   useEffect(() => {
     if (!editGenerate) {
       let newPass = generateRandomPassword(10);
-      setUsuarioCreate({
-        ...usuarioCreate,
+      setUsuarioCreate((u) => ({
+        ...u,
         password: newPass,
-      });
+      }));
     }
   }, [editGenerate]);
 
@@ -246,9 +246,9 @@ const Usuarios = () => {
     }
   };
   useEffect(() => {
-    // eslint-disable-next-line
     buscarUsuarios();
-  }, [0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const buscarSedes = async () => {
     try {
@@ -270,9 +270,9 @@ const Usuarios = () => {
     }
   };
   useEffect(() => {
-    // eslint-disable-next-line
     buscarSedes();
-  }, [0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const buscarRoles = async () => {
     try {
@@ -294,9 +294,9 @@ const Usuarios = () => {
     }
   };
   useEffect(() => {
-    // eslint-disable-next-line
     buscarRoles();
-  }, [0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ESTADOS PARA LA TABLA DINAMICA
   const [selectsProperties, setSelectsProperties] = useState([]);
@@ -378,8 +378,10 @@ const Usuarios = () => {
   // useEffect para manejar el filtrado y paginación
   useEffect(() => {
     applyFilters(); // Aplicar filtro inicialmente
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterUsuarios, currentPage, itemsPerPage, searchTerm]);
 
+  // eslint-disable-next-line no-unused-vars
   const handleSelect = (e, id) => {
     e.stopPropagation();
     setSelectsProperties((prevSelects) => {
@@ -390,6 +392,7 @@ const Usuarios = () => {
       }
     });
   };
+  // eslint-disable-next-line no-unused-vars
   const handleCheckSelect = (e, id) => {
     e.stopPropagation();
     let active = e.target.checked;
@@ -402,6 +405,7 @@ const Usuarios = () => {
     }
   };
 
+  // eslint-disable-next-line no-unused-vars
   const handleSelectAll = (e) => {
     const isChecked = e.target.checked;
     const visiblePropertyIds = visibleUsuarios.map((propiedad) => propiedad.id);
@@ -448,6 +452,7 @@ const Usuarios = () => {
 
     setVisibleUsuarios(paginatedUsuarios);
   };
+  // eslint-disable-next-line no-unused-vars
   const handleEditarProperty = (e, id) => {
     e.stopPropagation();
     console.log(id);
@@ -470,7 +475,7 @@ const Usuarios = () => {
     console.log(id);
     let propiedad_id = id;
     try {
-      const response = await eliminar_property(propiedad_id);
+      await eliminar_property(propiedad_id);
       buscarUsuarios();
       message.success("Se elimino correctamente la propiedad");
     } catch (error) {

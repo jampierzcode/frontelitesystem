@@ -30,7 +30,7 @@ const SedesManager = () => {
       console.log(response);
 
       const data = response.data;
-      if (data.status == "success") {
+      if (data.status === "success") {
         const reformData = data.data.map((d) => {
           return {
             direction: d.direction,
@@ -54,6 +54,7 @@ const SedesManager = () => {
 
   useEffect(() => {
     fetchSedes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleCreate = async () => {

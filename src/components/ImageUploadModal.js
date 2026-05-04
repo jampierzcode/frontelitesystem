@@ -125,6 +125,7 @@ const ImageUploadModal = ({ isOpen, onClose, onUpload }) => {
       closeCamera();
       setImages([]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   return (
