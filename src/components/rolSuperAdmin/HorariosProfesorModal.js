@@ -7,6 +7,7 @@ import {
   Select,
   TimePicker,
   Switch,
+  Input,
   message,
   Popconfirm,
   Tag,
@@ -32,6 +33,8 @@ const TIME_FORMAT = "HH:mm";
 const HorariosProfesorModal = ({ open, profesor, onClose }) => {
   const [clases, setClases] = useState([]);
   const [ciclos, setCiclos] = useState([]);
+  const [canales, setCanales] = useState([]);
+  const [turnos, setTurnos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form] = Form.useForm();
@@ -65,10 +68,30 @@ const HorariosProfesorModal = ({ open, profesor, onClose }) => {
     }
   };
 
+  const fetchCanales = async () => {
+    try {
+      const res = await apiAcademy.get("/canales");
+      setCanales(res.data.data || []);
+    } catch {
+      // silencioso
+    }
+  };
+
+  const fetchTurnos = async () => {
+    try {
+      const res = await apiAcademy.get("/turnos");
+      setTurnos(res.data.data || []);
+    } catch {
+      // silencioso
+    }
+  };
+
   useEffect(() => {
     if (open) {
       fetchClases();
       fetchCiclos();
+      fetchCanales();
+      fetchTurnos();
       resetForm();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -85,6 +108,10 @@ const HorariosProfesorModal = ({ open, profesor, onClose }) => {
     form.setFieldsValue({
       cursoId: record.cursoId,
       cicloId: record.cicloId,
+      canalId: record.canalId,
+      turnoId: record.turnoId,
+      aula: record.aula,
+      codigoAula: record.codigoAula,
       dia: record.dia,
       horario: [
         dayjs(record.horaInicio, TIME_FORMAT),
@@ -102,6 +129,10 @@ const HorariosProfesorModal = ({ open, profesor, onClose }) => {
         profesorId: profesor.id,
         cursoId: values.cursoId,
         cicloId: values.cicloId || null,
+        canalId: values.canalId || null,
+        turnoId: values.turnoId || null,
+        aula: values.aula || null,
+        codigoAula: values.codigoAula || null,
         dia: values.dia,
         horaInicio: horaInicioDayjs.format(TIME_FORMAT),
         horaFin: horaFinDayjs.format(TIME_FORMAT),
@@ -154,6 +185,20 @@ const HorariosProfesorModal = ({ open, profesor, onClose }) => {
       title: "Ciclo",
       key: "ciclo",
       render: (_, r) => r.ciclo?.nombre || <Tag>Sin ciclo</Tag>,
+    },
+    {
+      title: "Canal",
+      key: "canal",
+      render: (_, r) =>
+        r.canal?.nombre ? <Tag color="blue">{r.canal.nombre}</Tag> : <Tag>—</Tag>,
+    },
+    {
+      title: "Aula",
+      key: "aula",
+      render: (_, r) =>
+        r.aula || r.codigoAula
+          ? `${r.aula || ""}${r.codigoAula ? ` (${r.codigoAula})` : ""}`
+          : "—",
     },
     {
       title: "Activo",
@@ -280,6 +325,31 @@ const HorariosProfesorModal = ({ open, profesor, onClose }) => {
               placeholder="Sin ciclo / selecciona"
               options={ciclos.map((c) => ({ value: c.id, label: c.nombre }))}
             />
+          </Form.Item>
+          <Form.Item label="Canal" name="canalId">
+            <Select
+              allowClear
+              placeholder="Canal (grupo del estudiante)"
+              options={canales.map((c) => ({
+                value: c.id,
+                label: c.area ? `${c.nombre} — ${c.area}` : c.nombre,
+              }))}
+            />
+          </Form.Item>
+          <Form.Item label="Turno" name="turnoId">
+            <Select
+              allowClear
+              placeholder="Turno"
+              options={turnos
+                .filter((t) => t.activo)
+                .map((t) => ({ value: t.id, label: t.nombre }))}
+            />
+          </Form.Item>
+          <Form.Item label="Aula" name="aula">
+            <Input placeholder="Ej: 101, Laboratorio B" />
+          </Form.Item>
+          <Form.Item label="Código de aula" name="codigoAula">
+            <Input placeholder="Ej: A-101" />
           </Form.Item>
           <Form.Item label="Activo" name="activo" valuePropName="checked">
             <Switch />

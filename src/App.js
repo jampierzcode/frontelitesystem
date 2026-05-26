@@ -33,6 +33,7 @@ import SolicitudesMatricula from "./pages/superadmin/SolicitudesMatricula";
 import SolicitudDetalle from "./pages/superadmin/SolicitudDetalle";
 import Configuracion from "./pages/superadmin/Configuracion";
 import Turnos from "./pages/superadmin/Turnos";
+import Canales from "./pages/superadmin/Canales";
 
 function App() {
   return (
@@ -231,6 +232,16 @@ function App() {
               <PrivateRoute roles={["superadmin"]}>
                 <LayoutSuperadmin>
                   <Turnos />
+                </LayoutSuperadmin>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/canales"
+            element={
+              <PrivateRoute roles={["superadmin"]}>
+                <LayoutSuperadmin>
+                  <Canales />
                 </LayoutSuperadmin>
               </PrivateRoute>
             }

@@ -140,6 +140,11 @@ const Sidebar = ({ open, setOpen }) => {
           icon: <FaTimeline />,
         },
         {
+          title: "Canales",
+          url: "/canales",
+          icon: <MdOutlineClass />,
+        },
+        {
           title: "Configuración",
           url: "/configuracion",
           icon: <FiSettings />,
