@@ -8,7 +8,7 @@ export const AuthProvider = ({ children }) => {
   const apiUrl = process.env.REACT_APP_API_URL;
   const [loading, setLoading] = useState(true);
   const [auth, setAuth] = useState({
-    token: sessionStorage.getItem("token") || null,
+    token: localStorage.getItem("token") || null,
     user: null,
   });
 
@@ -26,7 +26,7 @@ export const AuthProvider = ({ children }) => {
       const response = await axios.request(config);
       const data = response.data;
 
-      sessionStorage.setItem("token", data.token);
+      localStorage.setItem("token", data.token);
       await fetchMe(data.token);
       return { success: true };
     } catch (error) {
@@ -78,8 +78,8 @@ export const AuthProvider = ({ children }) => {
   }, [auth.token]);
 
   const logout = () => {
-    sessionStorage.removeItem("token");
-    sessionStorage.removeItem("user");
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
     setAuth({ token: null, user: null });
   };
 

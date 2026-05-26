@@ -7,7 +7,7 @@ const apiAcademy = axios.create({
 
 // Interceptor para agregar el token automáticamente
 apiAcademy.interceptors.request.use((config) => {
-  const token = sessionStorage.getItem("token");
+  const token = localStorage.getItem("token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

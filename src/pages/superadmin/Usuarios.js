@@ -53,7 +53,7 @@ const Usuarios = () => {
     return password;
   };
   const { auth } = useAuth();
-  const session = JSON.parse(sessionStorage.getItem("user"));
+  const session = JSON.parse(localStorage.getItem("user"));
   const apiUrl = process.env.REACT_APP_API_URL;
 
   //   sedes
