@@ -50,7 +50,9 @@ export default function Asistencias() {
   const hoy = useMemo(() => [dayjs().startOf("day"), dayjs().endOf("day")], []);
   const [filtroFecha, setFiltroFecha] = useState(hoy);
   const [filtroEstado, setFiltroEstado] = useState("");
+  const [filtroTurno, setFiltroTurno] = useState(null);
 
+  const [turnos, setTurnos] = useState([]);
   const [estudiantes, setEstudiantes] = useState([]);
   const [sinMarcar, setSinMarcar] = useState([]);
   const [seleccionadosFalta, setSeleccionadosFalta] = useState([]);
@@ -71,6 +73,15 @@ export default function Asistencias() {
     }
   };
 
+  const fetchTurnos = async () => {
+    try {
+      const res = await apiAcademy.get("/turnos");
+      setTurnos((res.data.data || []).filter((t) => t.activo));
+    } catch {
+      // silencioso
+    }
+  };
+
   const fetchAsistencias = async () => {
     setLoading(true);
     try {
@@ -80,6 +91,7 @@ export default function Asistencias() {
         params.fechaFin = filtroFecha[1].format("YYYY-MM-DD");
       }
       if (filtroEstado) params.estado = filtroEstado;
+      if (filtroTurno) params.turno_id = filtroTurno;
       const res = await apiAcademy.get("/asistencias", { params });
       setAsistencias(res.data.data || []);
     } catch {
@@ -92,8 +104,10 @@ export default function Asistencias() {
   const fetchSinMarcar = async () => {
     try {
       const fecha = dayjs().format("YYYY-MM-DD");
+      const params = { fecha };
+      if (filtroTurno) params.turno_id = filtroTurno;
       const res = await apiAcademy.get("/asistencias/sin-marcar-hoy", {
-        params: { fecha },
+        params,
       });
       setSinMarcar(res.data.data || []);
     } catch {
@@ -103,7 +117,9 @@ export default function Asistencias() {
 
   const fetchEstadoOperativo = async () => {
     try {
-      const res = await apiAcademy.get("/horarios/operativo-actual");
+      const params = {};
+      if (filtroTurno) params.turno_id = filtroTurno;
+      const res = await apiAcademy.get("/horarios/operativo-actual", { params });
       setEstadoOperativo(res.data.data);
     } catch {
       setEstadoOperativo(null);
@@ -112,16 +128,22 @@ export default function Asistencias() {
 
   useEffect(() => {
     fetchEstudiantes();
+    fetchTurnos();
+  }, []);
+
+  // Recalcula sin-marcar y estado operativo cuando cambia el turno (y refresca el operativo en intervalo)
+  useEffect(() => {
     fetchSinMarcar();
     fetchEstadoOperativo();
     const intervalo = setInterval(fetchEstadoOperativo, POLL_OPERATIVO_MS);
     return () => clearInterval(intervalo);
-  }, []);
+    // eslint-disable-next-line
+  }, [filtroTurno]);
 
   useEffect(() => {
     fetchAsistencias();
     // eslint-disable-next-line
-  }, [filtroFecha, filtroEstado]);
+  }, [filtroFecha, filtroEstado, filtroTurno]);
 
   // ------- resumen -------
   const resumen = useMemo(() => {
@@ -248,6 +270,12 @@ export default function Asistencias() {
     },
     { title: "Fecha", dataIndex: "fecha", render: (v) => dayjs(v).format("DD/MM/YYYY") },
     {
+      title: "Turno",
+      key: "turno",
+      render: (_, r) =>
+        r.turno ? <Tag color="blue">{r.turno.nombre}</Tag> : "—",
+    },
+    {
       title: "Entrada",
       dataIndex: "horaEntrada",
       render: (v) => (v ? v.slice(0, 5) : "—"),
@@ -309,6 +337,11 @@ export default function Asistencias() {
           }`}
         >
           {academiaAbierta ? "✅ Academia ABIERTA" : "⚠️ Academia CERRADA"}
+          {estadoOperativo.turnoNombre && (
+            <span className="ml-2 font-semibold">
+              · Turno {estadoOperativo.turnoNombre}
+            </span>
+          )}
           {estadoOperativo.horarioVigente && (
             <span className="ml-2">
               · Horario:{" "}
@@ -340,6 +373,14 @@ export default function Asistencias() {
           <Option value="falta">Falta</Option>
           <Option value="justificada">Justificada</Option>
         </Select>
+        <Select
+          placeholder="Turno (todos)"
+          value={filtroTurno || undefined}
+          onChange={(v) => setFiltroTurno(v || null)}
+          style={{ width: 160 }}
+          allowClear
+          options={turnos.map((t) => ({ value: t.id, label: t.nombre }))}
+        />
         <Button
           type="primary"
           className="bg-primary"

@@ -34,17 +34,30 @@ import SolicitudDetalle from "./pages/superadmin/SolicitudDetalle";
 import Configuracion from "./pages/superadmin/Configuracion";
 import Turnos from "./pages/superadmin/Turnos";
 import Canales from "./pages/superadmin/Canales";
+import Dashboard from "./pages/superadmin/Dashboard";
+import NotificacionesToaster from "./components/notificaciones/NotificacionesToaster";
 
 function App() {
   return (
     <AuthProvider>
       <Router>
+        <NotificacionesToaster />
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/login/identy" element={<Identy />} />
           <Route path="/" element={<Navigate to="/login" replace />} />
 
           {/* RUTAS PARA USUARIO SUPERADMIN */}
+          <Route
+            path="/dashboard"
+            element={
+              <PrivateRoute roles={["superadmin"]}>
+                <LayoutSuperadmin>
+                  <Dashboard />
+                </LayoutSuperadmin>
+              </PrivateRoute>
+            }
+          />
           <Route
             path="/sedes"
             element={

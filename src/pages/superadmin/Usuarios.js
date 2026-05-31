@@ -484,7 +484,28 @@ const Usuarios = () => {
   };
 
   return (
-    <div className="w-full p-6 app-container-sections">
+    <div className="w-full p-6 app-container-sections relative">
+      {/* Overlay de módulo deshabilitado */}
+      <div className="absolute inset-0 z-50 flex items-start justify-center bg-white/40 backdrop-blur-[2px]">
+        <div className="mt-[18vh] mx-4 flex max-w-[560px] items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-5 shadow-lg">
+          <div className="mt-[2px] flex h-9 w-9 min-w-[36px] items-center justify-center rounded-full bg-amber-100 text-amber-600">
+            <FaLock />
+          </div>
+          <div>
+            <div className="font-bold text-amber-800">
+              Módulo no habilitado por el momento
+            </div>
+            <div className="mt-1 text-sm text-amber-700">
+              La gestión de usuarios con roles y permisos no estaba contemplada
+              en la primera propuesta del proyecto. Es un nuevo requerimiento
+              que se implementará a futuro y requiere una cotización adicional.
+              Por ahora este módulo permanece deshabilitado.
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* Contenido deshabilitado (gris y sin interacción) */}
+      <div className="pointer-events-none select-none opacity-40 grayscale">
       {/* <div className="w-full mb-4">
         <EmpresaSelect
           businessActive={businessActive}
@@ -1172,6 +1193,7 @@ const Usuarios = () => {
             {totalPages}
           </button>
         </div>
+      </div>
       </div>
     </div>
   );

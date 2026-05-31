@@ -48,25 +48,26 @@ const Login = () => {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 ">
-      <div className="relative col-span-2 content-image md:h-screen w-full">
+      <div className="relative col-span-2 content-image hidden md:block md:h-screen w-full bg-black">
         <img
           className="object-cover w-full h-full"
-          src="https://academiagoma.com/wp-content/uploads/2022/10/consejos-sacar-buenas-notas-curso-escolar-academia-goma.jpg"
-          alt=""
+          src="/portada-login.png"
+          alt="Academia Élite Sur"
         />
-        <div className="absolute inset-0 w-full z-50 bg-gradient-to-b from-[rgba(18,19,21,0.9)] via-[rgba(184,161,72,0.9)] to-black opacity-90"></div>
-        {/* <img
-          className="absolute top-5 right-5 z-20 w-20 h-20 md:w-32 md:h-32"
-          src="https://imagenesrutalab.s3.us-east-1.amazonaws.com/growthsuite/growthsuitelogoblanco.png"
-          alt="Growth Suite Logo"
-        /> */}
+        <div className="absolute inset-0 w-full bg-black/20"></div>
       </div>
       <div className="h-full flex px-6 items-center justify-center bg-white">
         <form onSubmit={handleLogin} className="bg-white p-6 rounded w-full">
-          <h2 className="text-2xl font-bold mb-4 text-center">
-            System Academy Élite
+          <div className="flex justify-center mb-4">
+            <img
+              src="/logo-elite.jpg"
+              alt="Academia Élite Sur"
+              className="w-32 h-32 md:w-40 md:h-40 object-contain rounded-full shadow-md"
+            />
+          </div>
+          <h2 className="text-2xl font-bold mb-6 text-center">
+            Iniciar sesión
           </h2>
-          {/* <h2 className="text-sm font-bold mb-4">Iniciar sesión</h2> */}
           {error ? (
             <h1 className="border p-2 border-red-500 text-red-500 rounded-full">
               {error}

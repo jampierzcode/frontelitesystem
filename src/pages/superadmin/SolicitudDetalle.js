@@ -13,18 +13,36 @@ import {
   Switch,
   Modal,
   Input,
+  Select,
   Skeleton,
   Empty,
 } from "antd";
 import dayjs from "dayjs";
 import { ArrowLeftOutlined, CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
 import apiAcademy from "../../components/auth/apiAcademy";
+import VoucherPicker from "../../components/VoucherPicker";
+
+async function subirVoucherArchivo(file) {
+  const fd = new FormData();
+  fd.append("file", file);
+  const up = await apiAcademy.post("/uploads/voucher", fd, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return { url: up.data?.data?.url || null, key: up.data?.data?.key || null };
+}
 
 const ESTADO_COLOR = {
   pendiente: "gold",
   aprobada: "green",
   rechazada: "red",
 };
+
+const METODO_OPTIONS = [
+  { value: "efectivo", label: "Efectivo" },
+  { value: "yape", label: "Yape" },
+  { value: "plin", label: "Plin" },
+  { value: "tarjeta", label: "Tarjeta" },
+];
 
 export default function SolicitudDetalle() {
   const { id } = useParams();
@@ -34,8 +52,12 @@ export default function SolicitudDetalle() {
   const [aprobarOpen, setAprobarOpen] = useState(false);
   const [rechazarOpen, setRechazarOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [voucherMatFile, setVoucherMatFile] = useState(null);
+  const [voucherMenFile, setVoucherMenFile] = useState(null);
   const [aprobarForm] = Form.useForm();
   const [rechazarForm] = Form.useForm();
+  const regMat = Form.useWatch("registrarPagoMatricula", aprobarForm);
+  const regMen = Form.useWatch("registrarPagoMensualidad", aprobarForm);
 
   const fetchDetalle = async () => {
     setLoading(true);
@@ -59,10 +81,30 @@ export default function SolicitudDetalle() {
 
   const openAprobar = () => {
     aprobarForm.resetFields();
+    setVoucherMatFile(null);
+    setVoucherMenFile(null);
+
+    // Precio según el ciclo y la modalidad de la solicitud (editable luego).
+    const c = solicitud?.ciclo;
+    const esPresencial = solicitud?.modalidad === "presencial";
+    const precioMatriculaCiclo = c
+      ? Number(esPresencial ? c.montoMatriculaPresencial : c.montoMatriculaVirtual)
+      : undefined;
+    const precioMensualidadCiclo = c
+      ? Number(esPresencial ? c.montoMensualidadPresencial : c.montoMensualidadVirtual)
+      : undefined;
+
     aprobarForm.setFieldsValue({
+      precioMatricula: Number.isFinite(precioMatriculaCiclo)
+        ? precioMatriculaCiclo
+        : undefined,
+      precioMensualidad: Number.isFinite(precioMensualidadCiclo)
+        ? precioMensualidadCiclo
+        : undefined,
       registrarPagoMatricula: tieneVoucherMat,
       registrarPagoMensualidad: tieneVoucherMen,
-      metodoPago: "yape",
+      metodoMatricula: "efectivo",
+      metodoMensualidad: "efectivo",
     });
     setAprobarOpen(true);
   };
@@ -71,6 +113,18 @@ export default function SolicitudDetalle() {
     try {
       const v = await aprobarForm.validateFields();
       setSubmitting(true);
+
+      // Si el admin adjuntó voucher (archivo o foto) en el modal, se sube y
+      // se manda como override para el pago automático correspondiente.
+      let voucherMat = null;
+      let voucherMen = null;
+      if (v.registrarPagoMatricula && voucherMatFile) {
+        voucherMat = await subirVoucherArchivo(voucherMatFile);
+      }
+      if (v.registrarPagoMensualidad && voucherMenFile) {
+        voucherMen = await subirVoucherArchivo(voucherMenFile);
+      }
+
       const res = await apiAcademy.post(
         `/solicitudes-matricula/${id}/aprobar`,
         {
@@ -78,7 +132,12 @@ export default function SolicitudDetalle() {
           precioMensualidad: v.precioMensualidad,
           registrarPagoMatricula: v.registrarPagoMatricula,
           registrarPagoMensualidad: v.registrarPagoMensualidad,
-          metodoPago: v.metodoPago,
+          metodoMatricula: v.metodoMatricula,
+          metodoMensualidad: v.metodoMensualidad,
+          voucherMatriculaUrl: voucherMat?.url,
+          voucherMatriculaKey: voucherMat?.key,
+          voucherMensualidadUrl: voucherMen?.url,
+          voucherMensualidadKey: voucherMen?.key,
         }
       );
       message.success(res.data.message);
@@ -251,37 +310,71 @@ export default function SolicitudDetalle() {
         </p>
         <Form layout="vertical" form={aprobarForm}>
           <Form.Item
-            label="Precio matrícula (vacío = del ciclo)"
+            label="Precio matrícula"
             name="precioMatricula"
+            extra="Tomado del ciclo — puedes editarlo"
           >
             <InputNumber min={0} step={10} className="w-full" />
           </Form.Item>
           <Form.Item
-            label="Precio mensualidad (vacío = del ciclo)"
+            label="Precio mensualidad"
             name="precioMensualidad"
+            extra="Tomado del ciclo — puedes editarlo"
           >
             <InputNumber min={0} step={10} className="w-full" />
           </Form.Item>
           <Form.Item
-            label="Método de pago para registros automáticos"
-            name="metodoPago"
-          >
-            <Input placeholder="yape, plin, efectivo, tarjeta..." />
-          </Form.Item>
-          <Form.Item
-            label={`Registrar pago de matrícula ${tieneVoucherMat ? "(con voucher)" : "(sin voucher)"}`}
+            label="¿Pagó su matrícula?"
             name="registrarPagoMatricula"
             valuePropName="checked"
+            extra="Actívalo para registrar el pago de la matrícula"
+            style={{ marginBottom: regMat ? 4 : undefined }}
           >
-            <Switch />
+            <Switch checkedChildren="Sí" unCheckedChildren="No" />
           </Form.Item>
+          {regMat && (
+            <div className="mb-4 pl-1">
+              <Form.Item
+                label="Método de pago (matrícula)"
+                name="metodoMatricula"
+                rules={[{ required: true, message: "Selecciona el método" }]}
+              >
+                <Select options={METODO_OPTIONS} />
+              </Form.Item>
+              <p className="text-xs text-gray-500 mb-1">
+                {tieneVoucherMat
+                  ? "Ya hay un voucher del solicitante. Puedes reemplazarlo subiendo otro o tomando una foto:"
+                  : "Sube o toma foto del voucher de matrícula (opcional):"}
+              </p>
+              <VoucherPicker value={voucherMatFile} onChange={setVoucherMatFile} />
+            </div>
+          )}
           <Form.Item
-            label={`Registrar pago de mensualidad (1ª) ${tieneVoucherMen ? "(con voucher)" : "(sin voucher)"}`}
+            label="¿Pagó su primera mensualidad?"
             name="registrarPagoMensualidad"
             valuePropName="checked"
+            extra="Actívalo para registrar el pago de la primera mensualidad"
+            style={{ marginBottom: regMen ? 4 : undefined }}
           >
-            <Switch />
+            <Switch checkedChildren="Sí" unCheckedChildren="No" />
           </Form.Item>
+          {regMen && (
+            <div className="mb-2 pl-1">
+              <Form.Item
+                label="Método de pago (mensualidad)"
+                name="metodoMensualidad"
+                rules={[{ required: true, message: "Selecciona el método" }]}
+              >
+                <Select options={METODO_OPTIONS} />
+              </Form.Item>
+              <p className="text-xs text-gray-500 mb-1">
+                {tieneVoucherMen
+                  ? "Ya hay un voucher del solicitante. Puedes reemplazarlo subiendo otro o tomando una foto:"
+                  : "Sube o toma foto del voucher de mensualidad (opcional):"}
+              </p>
+              <VoucherPicker value={voucherMenFile} onChange={setVoucherMenFile} />
+            </div>
+          )}
         </Form>
       </Modal>
 

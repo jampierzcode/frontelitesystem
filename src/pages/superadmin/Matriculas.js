@@ -183,8 +183,11 @@ const Matriculas = () => {
           fechaFin,
         });
         message.success("Matrícula actualizada");
+        setIsModalOpen(false);
+        setCurrentMatricula(null);
+        fetchData();
       } else {
-        await apiAcademy.post("/matriculas", {
+        const res = await apiAcademy.post("/matriculas", {
           estudianteId: values.estudiante_id,
           cicloId: values.ciclo_id,
           modalidad: values.modalidad,
@@ -194,12 +197,20 @@ const Matriculas = () => {
           fechaInicio,
           fechaFin,
         });
+        const nuevaId = res.data?.data?.id;
         message.success("Matrícula creada con cronograma");
-      }
+        setIsModalOpen(false);
+        setCurrentMatricula(null);
 
-      setIsModalOpen(false);
-      setCurrentMatricula(null);
-      fetchData();
+        // Refrescar la lista y abrir automáticamente el cronograma de la
+        // matrícula recién creada para registrar sus pagos.
+        const matsRes = await apiAcademy.get("/matriculas");
+        const data = matsRes.data.data || [];
+        setMatriculas(data);
+        setFilteredMatriculas(data);
+        const creada = data.find((m) => m.id === nuevaId);
+        if (creada) openCronograma(creada);
+      }
     } catch (err) {
       message.error("Error al guardar matrícula");
     }

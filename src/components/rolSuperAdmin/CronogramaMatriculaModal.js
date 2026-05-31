@@ -7,16 +7,24 @@ import {
   Select,
   InputNumber,
   Input,
-  Upload,
   Image,
   message,
   Tag,
   Progress,
-  Space,
 } from "antd";
 import { UploadOutlined, EyeOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import apiAcademy from "../auth/apiAcademy";
+import VoucherPicker from "../VoucherPicker";
+
+async function subirVoucherArchivo(file) {
+  const fd = new FormData();
+  fd.append("file", file);
+  const up = await apiAcademy.post("/uploads/voucher", fd, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return { url: up.data?.data?.url || null, key: up.data?.data?.key || null };
+}
 
 const ESTADO_COLOR = {
   pendiente: "default",
@@ -29,7 +37,11 @@ const CronogramaMatriculaModal = ({ open, matricula, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [pagoCuota, setPagoCuota] = useState(null);
   const [submittingPago, setSubmittingPago] = useState(false);
+  const [pagoVoucherFile, setPagoVoucherFile] = useState(null);
   const [voucherCuota, setVoucherCuota] = useState(null); // cuota cuyo voucher se muestra
+  const [subirVoucher, setSubirVoucher] = useState(null); // { cuota, pago } al que adjuntar voucher
+  const [subirVoucherFile, setSubirVoucherFile] = useState(null);
+  const [submittingVoucher, setSubmittingVoucher] = useState(false);
   const [pagoForm] = Form.useForm();
 
   const fetchCuotas = async () => {
@@ -61,6 +73,7 @@ const CronogramaMatriculaModal = ({ open, matricula, onClose }) => {
 
   const openPagoModal = (cuota) => {
     setPagoCuota(cuota);
+    setPagoVoucherFile(null);
     const saldo = Number(cuota.montoEsperado) - Number(cuota.montoPagado);
     pagoForm.resetFields();
     pagoForm.setFieldsValue({
@@ -71,7 +84,33 @@ const CronogramaMatriculaModal = ({ open, matricula, onClose }) => {
 
   const closePagoModal = () => {
     setPagoCuota(null);
+    setPagoVoucherFile(null);
     pagoForm.resetFields();
+  };
+
+  const openSubirVoucher = (cuota, pago) => {
+    setSubirVoucher({ cuota, pago });
+    setSubirVoucherFile(null);
+  };
+
+  const handleSubirVoucher = async () => {
+    if (!subirVoucher || !subirVoucherFile || submittingVoucher) return;
+    setSubmittingVoucher(true);
+    try {
+      const { url, key } = await subirVoucherArchivo(subirVoucherFile);
+      await apiAcademy.put(`/pagos/${subirVoucher.pago.id}`, {
+        imagenVoucherUrl: url,
+        imagenVoucherKey: key,
+      });
+      message.success("Voucher adjuntado");
+      setSubirVoucher(null);
+      setSubirVoucherFile(null);
+      fetchCuotas();
+    } catch {
+      message.error("Error al adjuntar voucher");
+    } finally {
+      setSubmittingVoucher(false);
+    }
   };
 
   const handlePago = async () => {
@@ -81,13 +120,11 @@ const CronogramaMatriculaModal = ({ open, matricula, onClose }) => {
       const values = await pagoForm.validateFields();
 
       let urlVoucher = null;
-      if (values.voucher && values.voucher.length > 0) {
-        const fd = new FormData();
-        fd.append("file", values.voucher[0].originFileObj);
-        const up = await apiAcademy.post("/uploads/voucher", fd, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-        urlVoucher = up.data?.data?.url || null;
+      let keyVoucher = null;
+      if (pagoVoucherFile) {
+        const subido = await subirVoucherArchivo(pagoVoucherFile);
+        urlVoucher = subido.url;
+        keyVoucher = subido.key;
       }
 
       await apiAcademy.post("/pagos", {
@@ -98,6 +135,7 @@ const CronogramaMatriculaModal = ({ open, matricula, onClose }) => {
         monto: values.monto,
         codigoOperacion: values.codigoOperacion || null,
         imagenVoucherUrl: urlVoucher,
+        imagenVoucherKey: keyVoucher,
         estado: "validado",
       });
 
@@ -169,23 +207,40 @@ const CronogramaMatriculaModal = ({ open, matricula, onClose }) => {
     {
       title: "Voucher",
       key: "voucher",
-      width: 100,
+      width: 110,
       render: (_, c) => {
         const pagoConVoucher = (c.pagos || []).find(
           (p) => p.estado === "validado" && p.imagenVoucherUrl
         );
-        if (!pagoConVoucher) {
-          return <span className="text-gray-400 text-xs">—</span>;
+        if (pagoConVoucher) {
+          return (
+            <Button
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() =>
+                setVoucherCuota({ cuota: c, pago: pagoConVoucher })
+              }
+            >
+              Ver
+            </Button>
+          );
         }
-        return (
-          <Button
-            size="small"
-            icon={<EyeOutlined />}
-            onClick={() => setVoucherCuota({ cuota: c, pago: pagoConVoucher })}
-          >
-            Ver
-          </Button>
+        // Cuota ya pagada pero sin voucher adjunto → permitir subirlo
+        const pagoValidado = (c.pagos || []).find(
+          (p) => p.estado === "validado"
         );
+        if (pagoValidado) {
+          return (
+            <Button
+              size="small"
+              icon={<UploadOutlined />}
+              onClick={() => openSubirVoucher(c, pagoValidado)}
+            >
+              Subir
+            </Button>
+          );
+        }
+        return <span className="text-gray-400 text-xs">—</span>;
       },
     },
     {
@@ -309,18 +364,11 @@ const CronogramaMatriculaModal = ({ open, matricula, onClose }) => {
           <Form.Item label="Código de operación" name="codigoOperacion">
             <Input />
           </Form.Item>
-          <Form.Item
-            label="Voucher"
-            name="voucher"
-            valuePropName="fileList"
-            getValueFromEvent={(e) => e.fileList}
-          >
-            <Upload beforeUpload={() => false} maxCount={1}>
-              <Space>
-                <UploadOutlined />
-                Subir voucher
-              </Space>
-            </Upload>
+          <Form.Item label="Voucher">
+            <VoucherPicker
+              value={pagoVoucherFile}
+              onChange={setPagoVoucherFile}
+            />
           </Form.Item>
         </Form>
       </Modal>
@@ -376,6 +424,36 @@ const CronogramaMatriculaModal = ({ open, matricula, onClose }) => {
         ) : (
           <div className="text-gray-400 text-center py-8">Sin voucher</div>
         )}
+      </Modal>
+
+      {/* Modal subir voucher a un pago ya validado que no tenía comprobante */}
+      <Modal
+        title={
+          subirVoucher
+            ? `Subir voucher — cuota #${subirVoucher.cuota.numeroCuota} (${subirVoucher.cuota.tipo})`
+            : "Subir voucher"
+        }
+        open={!!subirVoucher}
+        onCancel={() => {
+          setSubirVoucher(null);
+          setSubirVoucherFile(null);
+        }}
+        onOk={handleSubirVoucher}
+        okText="Guardar voucher"
+        okButtonProps={{
+          className: "bg-primary text-white",
+          loading: submittingVoucher,
+          disabled: !subirVoucherFile,
+        }}
+      >
+        <p className="text-sm text-gray-600 mb-3">
+          Este pago ya está registrado pero no tiene comprobante. Sube el voucher
+          o toma una foto para adjuntarlo.
+        </p>
+        <VoucherPicker
+          value={subirVoucherFile}
+          onChange={setSubirVoucherFile}
+        />
       </Modal>
     </>
   );

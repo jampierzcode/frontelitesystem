@@ -16,6 +16,7 @@ import apiAcademy from "../../components/auth/apiAcademy";
 export default function PoliticasAsistencia() {
   const [items, setItems] = useState([]);
   const [sedes, setSedes] = useState([]);
+  const [turnos, setTurnos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -24,12 +25,14 @@ export default function PoliticasAsistencia() {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [pol, sed] = await Promise.all([
+      const [pol, sed, tur] = await Promise.all([
         apiAcademy.get("/politicas-asistencia"),
         apiAcademy.get("/sedes"),
+        apiAcademy.get("/turnos"),
       ]);
       setItems(pol.data.data || []);
       setSedes(sed.data.data || []);
+      setTurnos(tur.data.data || []);
     } catch {
       message.error("Error al cargar políticas");
     } finally {
@@ -55,6 +58,7 @@ export default function PoliticasAsistencia() {
     setEditing(record);
     form.setFieldsValue({
       sedeId: record.sedeId,
+      turnoId: record.turnoId,
       toleranciaMinutosTardanza: record.toleranciaMinutosTardanza,
       permiteMarcarFueraHorario: !!record.permiteMarcarFueraHorario,
     });
@@ -66,6 +70,7 @@ export default function PoliticasAsistencia() {
       const v = await form.validateFields();
       const payload = {
         sedeId: v.sedeId || null,
+        turnoId: v.turnoId || null,
         toleranciaMinutosTardanza: v.toleranciaMinutosTardanza,
         permiteMarcarFueraHorario: !!v.permiteMarcarFueraHorario,
       };
@@ -102,6 +107,12 @@ export default function PoliticasAsistencia() {
       key: "sede",
       render: (_, r) =>
         r.sede ? r.sede.name_referential : <Tag>Global</Tag>,
+    },
+    {
+      title: "Turno",
+      key: "turno",
+      render: (_, r) =>
+        r.turno ? <Tag color="blue">{r.turno.nombre}</Tag> : <Tag>Todos</Tag>,
     },
     {
       title: "Tolerancia tardanza (min)",
@@ -141,8 +152,8 @@ export default function PoliticasAsistencia() {
           <h2 className="text-xl font-bold">Políticas de asistencia</h2>
           <p className="text-sm text-gray-500">
             Configura tolerancia de tardanza y si se permite marcar asistencia
-            fuera del horario operativo. Una política por sede (o una global
-            sin sede).
+            fuera del horario operativo. Puedes definir una política por turno
+            (mañana/tarde) y sede; si no, aplica la de la sede o la global.
           </p>
         </div>
         <Button className="bg-primary text-white" onClick={openCrear}>
@@ -179,6 +190,20 @@ export default function PoliticasAsistencia() {
               options={sedes.map((s) => ({
                 value: s.id,
                 label: s.name_referential || s.nameReferential,
+              }))}
+            />
+          </Form.Item>
+          <Form.Item
+            label="Turno (vacío = todos los turnos)"
+            name="turnoId"
+            extra="Define una tolerancia distinta para mañana y tarde. Si lo dejas vacío, aplica a todos los turnos de la sede."
+          >
+            <Select
+              allowClear
+              placeholder="Todos los turnos"
+              options={turnos.map((t) => ({
+                value: t.id,
+                label: t.nombre,
               }))}
             />
           </Form.Item>
